@@ -379,6 +379,30 @@
     </div>
   </section>
 
+  <!-- ---------- Calculadora de tiempo perdido ---------- -->
+  <section class="section" style="border-top:1px solid var(--border);">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>¿Cuánto te está costando hacerlo a mano?</h2>
+        <p>Tres datos rápidos y te decimos cuánto tiempo (y dinero) podrías recuperar al mes.</p>
+      </div>
+      <div class="day-card" style="max-width:560px;">
+        <div class="field">
+          <label for="calcHours">Horas a la semana respondiendo mensajes, reservas o citas</label>
+          <input type="number" id="calcHours" min="0" step="0.5" value="8">
+        </div>
+        <div class="field">
+          <label for="calcValue">¿Cuánto vale tu hora aproximadamente? (€)</label>
+          <input type="number" id="calcValue" min="0" step="1" value="15">
+        </div>
+        <button class="btn btn-primary btn-block" type="button" onclick="runCalc()">Calcular</button>
+        <div id="calcResult" class="free-block" style="margin-top:18px; display:none;">
+          <span id="calcResultText"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="section">
     <div class="wrap">
       <div class="section-head">
@@ -423,6 +447,29 @@
           <p class="step-num">3</p>
           <h3>Hablamos y lo montamos</h3>
           <p>Te contactamos en persona para diseñar la automatización contigo, sin letra pequeña.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="precios">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Precio</h2>
+        <p>Una cuota de alta por montar la automatización, y una mensualidad por mantenerla funcionando. Sin permanencia.</p>
+      </div>
+      <div class="value-list">
+        <div class="value-item">
+          <h3>Alta — desde 250€</h3>
+          <p>Montamos tu primera automatización (por ejemplo, WhatsApp) y la dejamos funcionando. Precio final según lo que necesites.</p>
+        </div>
+        <div class="value-item">
+          <h3>Mensualidad — desde 39€/mes</h3>
+          <p>Mantenimiento, revisión y soporte de lo que ya tienes activo. Cancelas cuando quieras desde tu panel.</p>
+        </div>
+        <div class="value-item">
+          <h3>Automatización extra — a medida</h3>
+          <p>Cada nueva automatización que añadas tiene su propio precio, que hablamos juntos antes de montarla.</p>
         </div>
       </div>
     </div>
@@ -578,6 +625,7 @@
 
   // ---- Catálogo de tipos de negocio y servicios (cargado desde la base de datos) ----
   var BUSINESS_TYPES = {};
+  var SERVICE_HOURS = {};
   var state = { businessKey: null, services: [], otherService: "", fallback: false };
 
   async function loadCatalog(){
@@ -597,6 +645,7 @@
       if(BUSINESS_TYPES[s.business_type_key]){
         BUSINESS_TYPES[s.business_type_key].services.push(s.name);
       }
+      SERVICE_HOURS[s.name] = s.avg_hours_saved;
     });
 
     var grid = document.getElementById("businessGrid");
@@ -611,6 +660,17 @@
     });
   }
   loadCatalog();
+
+  function runCalc(){
+    var hours = parseFloat(document.getElementById("calcHours").value) || 0;
+    var value = parseFloat(document.getElementById("calcValue").value) || 0;
+    var monthlyHours = hours * 4.33;
+    var monthlyMoney = Math.round(monthlyHours * value);
+    var box = document.getElementById("calcResult");
+    var text = document.getElementById("calcResultText");
+    text.textContent = "Unas " + Math.round(monthlyHours) + " horas al mes — unos " + monthlyMoney + "€ de tu tiempo";
+    box.style.display = "flex";
+  }
 
   function selectBusiness(key, btn){
     state.businessKey = key;
@@ -737,6 +797,23 @@
       return false;
     }
 
+    submitBtn.disabled = false;
+
+    // Sin sesión activa todavía (falta confirmar el email): guardamos los datos
+    // y los completamos automáticamente en el primer inicio de sesión.
+    if(!signUpRes.data.session){
+      savePendingSignup(email, {
+        businessName: businessName, businessType: state.businessKey,
+        contactName: name, email: email, phone: phone, services: services
+      });
+      document.getElementById("doneTitle").textContent = "Cuenta creada";
+      document.getElementById("doneSub").textContent = "Te hemos enviado un email de confirmación a " + email + ". Confírmalo y luego inicia sesión — completaremos tu registro automáticamente.";
+      document.getElementById("summaryBox").textContent =
+        "Negocio: " + businessName + "\nTipo: " + BUSINESS_TYPES[state.businessKey].label + "\nServicios elegidos: " + (services.length ? services.join(", ") : "-");
+      goStep("stepDone");
+      return false;
+    }
+
     var businessInsert = await db.from("businesses").insert({
       auth_user_id: userId,
       business_name: businessName,
@@ -745,8 +822,6 @@
       email: email,
       phone: phone || null
     }).select().single();
-
-    submitBtn.disabled = false;
 
     if(businessInsert.error){
       showContactError("Tu cuenta se creó, pero hubo un problema guardando los datos del negocio: " + businessInsert.error.message + ". Escríbenos y lo revisamos.");
@@ -826,7 +901,46 @@
     }
   }
 
-  // ================= Dashboard =================
+  var PENDING_KEY = "respiro_pending_signup";
+
+  function savePendingSignup(email, payload){
+    try{
+      localStorage.setItem(PENDING_KEY, JSON.stringify({ email: email, payload: payload }));
+    }catch(e){}
+  }
+
+  async function tryCompletePendingSignup(userId){
+    var raw;
+    try{ raw = localStorage.getItem(PENDING_KEY); }catch(e){ return false; }
+    if(!raw) return false;
+    var pending;
+    try{ pending = JSON.parse(raw); }catch(e){ return false; }
+
+    var sessionRes = await db.auth.getSession();
+    var session = sessionRes.data.session;
+    if(!session || !session.user || session.user.email !== pending.email) return false;
+
+    var p = pending.payload;
+    var businessInsert = await db.from("businesses").insert({
+      auth_user_id: userId,
+      business_name: p.businessName,
+      business_type_key: p.businessType,
+      contact_name: p.contactName,
+      email: p.email,
+      phone: p.phone || null
+    }).select().single();
+
+    if(businessInsert.error) return false;
+
+    if(p.services && p.services.length){
+      var rows = p.services.map(function(s){ return { business_id: businessInsert.data.id, service_name: s }; });
+      await db.from("business_services").insert(rows);
+    }
+
+    try{ localStorage.removeItem(PENDING_KEY); }catch(e){}
+    return true;
+  }
+
   async function openDashboard(){
     var sessionRes = await db.auth.getSession();
     var session = sessionRes.data.session;
@@ -849,6 +963,13 @@
     var bizRes = await db.from("businesses").select("*").eq("auth_user_id", userId).maybeSingle();
 
     if(bizRes.error || !bizRes.data){
+      var completed = await tryCompletePendingSignup(userId);
+      if(completed){
+        bizRes = await db.from("businesses").select("*").eq("auth_user_id", userId).maybeSingle();
+      }
+    }
+
+    if(bizRes.error || !bizRes.data){
       content.innerHTML = '<p class="dash-sub">No encontramos un negocio asociado a tu cuenta. Escríbenos si crees que es un error.</p>';
       return;
     }
@@ -859,9 +980,14 @@
 
     var activeNames = services.filter(function(s){ return s.status === "active"; }).map(function(s){ return s.service_name; });
     var available = (typeInfo ? typeInfo.services : []).filter(function(s){ return activeNames.indexOf(s) === -1; });
+    var totalHours = activeNames.reduce(function(sum, name){ return sum + (SERVICE_HOURS[name] || 3); }, 0);
 
     var html = '';
     html += '<div class="dash-section"><h3>' + biz.business_name + '</h3><p class="dash-sub">' + (typeInfo ? typeInfo.label : "") + ' · ' + biz.email + '</p></div>';
+
+    if(activeNames.length){
+      html += '<div class="free-block" style="margin-bottom:30px;"><span>Ahorras aprox. cada mes</span><span>' + totalHours + ' horas</span></div>';
+    }
 
     html += '<div class="dash-section"><h3>Tus automatizaciones</h3><p class="dash-sub">Activa o cancela lo que necesites.</p>';
     if(!services.length){
@@ -912,8 +1038,11 @@
     var businesses = bizRes.data || [];
     var services = svcRes.data || [];
     var leads = leadsRes.data || [];
+    var totalHours = services.filter(function(s){ return s.status === "active"; })
+      .reduce(function(sum, s){ return sum + (SERVICE_HOURS[s.service_name] || 3); }, 0);
 
-    var html = '<div class="dash-section"><h3>Negocios registrados (' + businesses.length + ')</h3>';
+    var html = '<div class="free-block" style="margin-bottom:30px;"><span>Horas ahorradas a vuestros clientes cada mes</span><span>' + totalHours + ' horas</span></div>';
+    html += '<div class="dash-section"><h3>Negocios registrados (' + businesses.length + ')</h3>';
     businesses.forEach(function(b){
       var svcs = services.filter(function(s){ return s.business_id === b.id; });
       var typeInfo = BUSINESS_TYPES[b.business_type_key];
@@ -923,7 +1052,8 @@
         html += '<span class="dash-meta">Sin servicios contratados</span>';
       } else {
         svcs.forEach(function(s){
-          html += '<span class="svc-tag">' + s.service_name + (s.status === "cancelled" ? " (cancelado)" : "") + '</span>';
+          var healthDot = s.status === "active" ? (s.health_status === "ok" ? "🟢" : s.health_status === "warning" ? "🟡" : "🔴") : "";
+          html += '<span class="svc-tag">' + healthDot + ' ' + s.service_name + (s.status === "cancelled" ? " (cancelado)" : "") + '</span>';
         });
       }
       html += '</div></div>';
