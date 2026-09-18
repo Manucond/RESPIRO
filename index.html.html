@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Respiro — Automatiza tu negocio, recupera tu tiempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F5F2E9;
+    --surface: #FFFFFF;
+    --surface-2: #FBF8F0;
+    --text: #16213E;
+    --text-muted: #5B6478;
+    --accent: #B87A20;
+    --accent-strong: #96611A;
+    --accent-soft: #F0DDB2;
+    --border: #E4DFD1;
+    --radius: 14px;
+    --shadow: 0 12px 30px -18px rgba(22,33,62,0.35);
+    --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+    --font-body: "Work Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #101A2E;
+      --surface: #16223B;
+      --surface-2: #1B2947;
+      --text: #F1EEE5;
+      --text-muted: #A9B2C6;
+      --accent: #E8A33D;
+      --accent-strong: #F3B65A;
+      --accent-soft: #3A3221;
+      --border: #28345216;
+      --border: #29365a;
+      --shadow: 0 18px 40px -20px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #101A2E;
+    --surface: #16223B;
+    --surface-2: #1B2947;
+    --text: #F1EEE5;
+    --text-muted: #A9B2C6;
+    --accent: #E8A33D;
+    --accent-strong: #F3B65A;
+    --accent-soft: #3A3221;
+    --border: #29365a;
+    --shadow: 0 18px 40px -20px rgba(0,0,0,0.6);
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  img,svg{ max-width:100%; display:block; }
+  a{ color: inherit; }
+  button{ font-family: inherit; }
+  :focus-visible{ outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .wrap{ max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Header ---------- */
+  .site-header{
+    position: sticky; top:0; z-index: 30;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  .site-header .wrap{
+    display:flex; align-items:center; justify-content:space-between;
+    padding-top: 16px; padding-bottom: 16px;
+  }
+  .brand{
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .brand em{ font-style: normal; color: var(--accent); }
+  .nav-actions{ display:flex; align-items:center; gap: 20px; }
+  .nav-link{ text-decoration:none; color: var(--text-muted); font-size:0.95rem; }
+  .nav-link:hover{ color: var(--text); }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    border-radius: 999px;
+    padding: 12px 26px;
+    font-size: 0.98rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .btn:active{ transform: translateY(1px); }
+  .btn-primary{ background: var(--accent); color: #201400; }
+  .btn-primary:hover{ background: var(--accent-strong); }
+  .btn-ghost{ background: transparent; color: var(--text); border-color: var(--border); }
+  .btn-ghost:hover{ border-color: var(--accent); }
+  .btn-block{ width: 100%; }
+  .btn-sm{ padding: 9px 18px; font-size: 0.9rem; }
+  .btn[disabled]{ opacity: 0.45; cursor: not-allowed; }
+
+  /* ---------- Hero ---------- */
+  .hero{ padding: 72px 0 56px; }
+  .hero .wrap{
+    display:grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items:center;
+  }
+  .eyebrow-free{ color: var(--text-muted); font-size: 1rem; margin: 0 0 14px; }
+  h1{
+    font-family: var(--font-display);
+    font-size: clamp(2.3rem, 4.4vw, 3.4rem);
+    line-height: 1.08;
+    margin: 0 0 20px;
+    max-width: 12ch;
+  }
+  .hero-sub{
+    font-size: 1.1rem; color: var(--text-muted); max-width: 46ch; margin: 0 0 32px;
+  }
+  .hero-ctas{ display:flex; align-items:center; gap: 22px; flex-wrap: wrap; }
+  .link-quiet{ text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; font-size: 0.95rem; color: var(--text-muted); background:none; border:none; cursor:pointer; padding:0; }
+  .link-quiet:hover{ color: var(--text); }
+
+  /* day comparison card */
+  .day-card{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 26px 26px 22px;
+  }
+  .day-card h3{
+    font-family: var(--font-display); font-weight:600; font-size:1.05rem; margin:0 0 18px;
+  }
+  .day-cols{ display:grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .day-col-label{ font-size: 0.78rem; color: var(--text-muted); margin: 0 0 10px; }
+  .day-col.before .day-col-label{ color: var(--text-muted); }
+  .day-col.after .day-col-label{ color: var(--accent); }
+  .task-row{
+    display:flex; align-items:baseline; gap: 8px;
+    font-size: 0.92rem; padding: 7px 0; border-bottom: 1px solid var(--border);
+  }
+  .task-row:last-child{ border-bottom: none; }
+  .task-time{ color: var(--text-muted); font-size: 0.8rem; min-width: 3.2em; }
+  .before .task-row .task-name{ color: var(--text); }
+  .after .task-row .task-name{ color: var(--text-muted); text-decoration: line-through; text-decoration-color: var(--border); }
+  .after .task-row .tag{
+    margin-left: auto; font-size: 0.72rem; color: var(--accent);
+    background: var(--accent-soft); padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  }
+  .free-block{
+    margin-top: 14px; border-radius: 10px; padding: 12px 14px;
+    background: var(--accent-soft); color: var(--accent-strong);
+    font-weight: 600; font-size: 0.95rem;
+    display:flex; align-items:center; justify-content:space-between;
+    opacity:0; transform: translateY(6px);
+    animation: rise 0.6s ease 0.5s forwards;
+  }
+  @keyframes rise{ to{ opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce){ .free-block{ animation: none; opacity:1; transform:none; } }
+
+  /* ---------- Value section ---------- */
+  .section{ padding: 64px 0; border-top: 1px solid var(--border); }
+  .section-head{ max-width: 56ch; margin-bottom: 40px; }
+  .section-head h2{
+    font-family: var(--font-display); font-size: clamp(1.7rem, 3vw, 2.2rem); margin: 0 0 12px;
+  }
+  .section-head p{ color: var(--text-muted); margin:0; }
+
+  .value-list{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top:1px solid var(--border); }
+  .value-item{ padding: 28px 26px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .value-item:last-child{ border-right: none; }
+  .value-item h3{ font-family: var(--font-display); font-weight:600; font-size: 1.15rem; margin: 0 0 10px; }
+  .value-item p{ color: var(--text-muted); margin: 0; font-size: 0.96rem; }
+
+  /* ---------- How it works ---------- */
+  .steps{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+  .step-item{ padding-top: 16px; border-top: 2px solid var(--border); }
+  .step-num{ font-family: var(--font-display); font-size: 1.6rem; color: var(--accent); margin: 0 0 8px; }
+  .step-item h3{ margin: 0 0 8px; font-size: 1.05rem; }
+  .step-item p{ margin:0; color: var(--text-muted); font-size: 0.95rem; }
+
+  /* ---------- Final CTA ---------- */
+  .cta-final{
+    text-align:center; padding: 72px 0;
+    background: var(--surface-2);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+  .cta-final h2{ font-family: var(--font-display); font-size: clamp(1.7rem, 3.4vw, 2.4rem); margin: 0 0 14px; }
+  .cta-final p{ color: var(--text-muted); margin: 0 0 28px; }
+
+  footer{ padding: 36px 0; }
+  footer .wrap{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+  footer .fine{ color: var(--text-muted); font-size: 0.85rem; }
+
+  /* ---------- Flow overlay ---------- */
+  .flow-overlay{
+    position: fixed; inset:0; z-index: 50;
+    background: color-mix(in srgb, var(--bg) 55%, black 15%);
+    display:flex; align-items:flex-start; justify-content:center;
+    padding: 40px 20px; overflow-y:auto;
+  }
+  .flow-overlay[hidden]{ display:none; }
+  .flow-panel{
+    background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    width: 100%; max-width: 560px; padding: 34px 32px 30px; position:relative;
+  }
+  .flow-close{
+    position:absolute; top:16px; right:16px;
+    width:34px; height:34px; border-radius:50%; border:1px solid var(--border);
+    background: transparent; color: var(--text-muted); font-size: 1.1rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .flow-close:hover{ color: var(--text); border-color: var(--accent); }
+  .flow-progress{ color: var(--text-muted); font-size: 0.82rem; margin: 0 0 18px; letter-spacing: 0.01em; }
+  .flow-step h2{ font-family: var(--font-display); font-size: 1.5rem; margin: 0 0 6px; }
+  .flow-step > p.flow-sub{ color: var(--text-muted); margin: 0 0 24px; font-size: 0.95rem; }
+
+  .choice-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .choice-btn{
+    text-align:left; padding: 14px 16px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface-2); cursor:pointer; font-size: 0.95rem; color: var(--text);
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .choice-btn:hover{ border-color: var(--accent); }
+  .choice-btn.selected{ border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); font-weight:600; }
+
+  .fallback-link{
+    display:block; text-align:center; margin: 4px 0 6px; font-size: 0.88rem;
+    color: var(--text-muted); text-decoration: underline; text-decoration-color: var(--border);
+    background:none; border:none; cursor:pointer; width:100%; padding: 8px 0;
+  }
+  .fallback-link:hover{ color: var(--text); }
+
+  .check-row{
+    display:flex; align-items:flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .check-row:last-of-type{ border-bottom: none; }
+  .check-row input[type="checkbox"]{ margin-top: 3px; width:17px; height:17px; accent-color: var(--accent); flex-shrink:0; }
+  .check-row label{ font-size: 0.96rem; cursor:pointer; }
+
+  .field{ margin-bottom: 16px; }
+  .field label{ display:block; font-size: 0.88rem; color: var(--text-muted); margin-bottom: 6px; }
+  .field input, .field textarea{
+    width: 100%; padding: 11px 13px; border-radius: 9px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font-family: inherit; font-size: 0.96rem;
+  }
+  .field textarea{ resize: vertical; min-height: 78px; }
+  .field input:focus, .field textarea:focus{ border-color: var(--accent); }
+  .field-hint{ font-size: 0.8rem; color: var(--text-muted); margin-top:4px; }
+
+  .flow-actions{ display:flex; gap: 12px; margin-top: 22px; }
+  .flow-actions .btn{ flex: 1; }
+
+  .other-field{ margin-top: 6px; }
+
+  .done-icon{
+    width: 52px; height:52px; border-radius:50%; background: var(--accent-soft); color: var(--accent-strong);
+    display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin-bottom: 18px;
+  }
+  .summary-box{
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; font-size: 0.85rem; color: var(--text-muted); white-space: pre-wrap;
+    margin: 16px 0; max-height: 180px; overflow-y:auto;
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 860px){
+    .hero .wrap{ grid-template-columns: 1fr; }
+    .value-list{ grid-template-columns: 1fr; }
+    .value-item{ border-right:none; }
+    .steps{ grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px){
+    .choice-grid{ grid-template-columns: 1fr; }
+    .flow-panel{ padding: 28px 20px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <div class="brand">Resp<em>i</em>ro</div>
+    <nav class="nav-actions">
+      <a class="nav-link" href="#como-funciona">Cómo funciona</a>
+      <button class="btn btn-primary btn-sm" onclick="openFlow()">Regístrate</button>
+    </nav>
+  </div>
+</header>
+
+<main id="landing">
+
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow-free">Automatizaciones para pequeños negocios</p>
+        <h1>Recupera las horas que tu negocio te quita</h1>
+        <p class="hero-sub">
+          Nos encargamos de las tareas repetitivas — reservas, control de stock, mensajes de clientes —
+          para que tú puedas cerrar antes y dejar de mirar el móvil por trabajo.
+        </p>
+        <div class="hero-ctas">
+          <button class="btn btn-primary" onclick="openFlow()">Regístrate</button>
+          <a class="link-quiet" href="#como-funciona">Ver cómo funciona</a>
+        </div>
+      </div>
+
+      <div class="day-card" aria-hidden="false">
+        <h3>Un día cualquiera en tu negocio</h3>
+        <div class="day-cols">
+          <div class="day-col before">
+            <p class="day-col-label">Sin automatizar</p>
+            <div class="task-row"><span class="task-time">09:20</span><span class="task-name">Revisar stock a mano</span></div>
+            <div class="task-row"><span class="task-time">12:10</span><span class="task-name">Confirmar reservas por teléfono</span></div>
+            <div class="task-row"><span class="task-time">17:40</span><span class="task-name">Responder mensajes de clientes</span></div>
+            <div class="task-row"><span class="task-time">20:30</span><span class="task-name">Cerrar y seguir contestando</span></div>
+          </div>
+          <div class="day-col after">
+            <p class="day-col-label">Con Respiro</p>
+            <div class="task-row"><span class="task-name">Revisar stock a mano</span><span class="tag">Automático</span></div>
+            <div class="task-row"><span class="task-name">Confirmar reservas por teléfono</span><span class="tag">Automático</span></div>
+            <div class="task-row"><span class="task-name">Responder mensajes de clientes</span><span class="tag">Automático</span></div>
+            <div class="task-row"><span class="task-name">Cerrar y seguir contestando</span><span class="tag">Automático</span></div>
+          </div>
+        </div>
+        <div class="free-block">
+          <span>A partir de las 18:00</span>
+          <span>Tú decides qué hacer</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Lo que te damos</h2>
+        <p>No vendemos software para que aprendas a usarlo. Nos ocupamos de que las tareas se hagan solas.</p>
+      </div>
+      <div class="value-list">
+        <div class="value-item">
+          <h3>Tiempo libre</h3>
+          <p>Las tareas repetitivas dejan de ocupar tu día. Las horas que antes perdías gestionando a mano vuelven a ser tuyas.</p>
+        </div>
+        <div class="value-item">
+          <h3>Comodidad</h3>
+          <p>Todo funciona por detrás. No cambias tu forma de trabajar ni tienes que aprender ninguna herramienta nueva.</p>
+        </div>
+        <div class="value-item">
+          <h3>A tu medida</h3>
+          <p>Cada negocio es distinto. Tú eliges qué tareas quieres dejar de hacer a mano y nosotros lo montamos para ti.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="como-funciona">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Cómo funciona</h2>
+        <p>Tres pasos, sin compromiso hasta que hablemos en persona.</p>
+      </div>
+      <div class="steps">
+        <div class="step-item">
+          <p class="step-num">1</p>
+          <h3>Cuéntanos tu negocio</h3>
+          <p>Nos dices a qué te dedicas y qué tareas te quitan más tiempo cada día.</p>
+        </div>
+        <div class="step-item">
+          <p class="step-num">2</p>
+          <h3>Elige qué automatizar</h3>
+          <p>Seleccionas los procesos que te gustaría dejar de hacer a mano.</p>
+        </div>
+        <div class="step-item">
+          <p class="step-num">3</p>
+          <h3>Hablamos y lo montamos</h3>
+          <p>Te contactamos en persona para diseñar la automatización contigo, sin letra pequeña.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-final">
+    <div class="wrap">
+      <h2>¿Lista para recuperar tu tiempo?</h2>
+      <p>Regístrate en dos minutos. Nosotros te contactamos después para hablarlo con calma.</p>
+      <button class="btn btn-primary" onclick="openFlow()">Regístrate ahora</button>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <div class="brand" style="font-size:1.1rem;">Resp<em>i</em>ro</div>
+      <p class="fine">© 2026 Respiro. Automatizaciones a medida para pequeños negocios.</p>
+    </div>
+  </footer>
+
+</main>
+
+<!-- ============ Registration flow ============ -->
+<div class="flow-overlay" id="flowOverlay" hidden role="dialog" aria-modal="true" aria-label="Formulario de registro">
+  <div class="flow-panel">
+    <button class="flow-close" aria-label="Cerrar formulario" onclick="closeFlow()">×</button>
+
+    <!-- Step 1: business type -->
+    <section class="flow-step" id="stepBusiness">
+      <p class="flow-progress">Paso 1 de 3</p>
+      <h2>¿A qué se dedica tu negocio?</h2>
+      <p class="flow-sub">Así te enseñamos solo lo que tiene sentido automatizar para ti.</p>
+      <div class="choice-grid" id="businessGrid"></div>
+      <button class="fallback-link" onclick="goContactFallback()">No encuentro mi tipo de negocio — contáctanos directamente</button>
+    </section>
+
+    <!-- Step 2: services -->
+    <section class="flow-step" id="stepServices" hidden>
+      <p class="flow-progress">Paso 2 de 3</p>
+      <h2>¿Qué te gustaría automatizar?</h2>
+      <p class="flow-sub">Elige todo lo que te interese. Más adelante lo concretamos juntos.</p>
+      <div id="servicesList"></div>
+      <div class="field other-field">
+        <label for="otherService">¿Alguna otra tarea que te gustaría automatizar?</label>
+        <input type="text" id="otherService" placeholder="Opcional">
+      </div>
+      <div class="flow-actions">
+        <button class="btn btn-ghost" onclick="goStep('stepBusiness')">Atrás</button>
+        <button class="btn btn-primary" onclick="goStep('stepContact')">Continuar</button>
+      </div>
+    </section>
+
+    <!-- Step 3: contact -->
+    <section class="flow-step" id="stepContact" hidden>
+      <p class="flow-progress" id="contactProgress">Paso 3 de 3</p>
+      <h2>Déjanos tus datos</h2>
+      <p class="flow-sub">Con esto te contactamos para hablarlo en persona, sin compromiso.</p>
+      <form id="contactForm" onsubmit="return submitFlow(event)">
+        <div class="field">
+          <label for="fName">Nombre*</label>
+          <input type="text" id="fName" required>
+        </div>
+        <div class="field">
+          <label for="fBusinessName">Nombre del negocio*</label>
+          <input type="text" id="fBusinessName" required>
+        </div>
+        <div class="field">
+          <label for="fEmail">Email*</label>
+          <input type="email" id="fEmail" required>
+        </div>
+        <div class="field" id="passwordField">
+          <label for="fPassword">Crea una contraseña*</label>
+          <input type="password" id="fPassword" minlength="6" autocomplete="new-password">
+          <p class="field-hint">Mínimo 6 caracteres. La usarás para entrar más adelante a tu panel.</p>
+        </div>
+        <div class="field">
+          <label for="fPhone">Teléfono (opcional)</label>
+          <input type="tel" id="fPhone">
+        </div>
+        <div class="field" id="fallbackCommentField" hidden>
+          <label for="fComment">Cuéntanos a qué se dedica tu negocio y qué te gustaría automatizar*</label>
+          <textarea id="fComment"></textarea>
+        </div>
+        <div class="field" id="normalCommentField">
+          <label for="fComment2">Algo más que quieras comentarnos (opcional)</label>
+          <textarea id="fComment2"></textarea>
+        </div>
+        <p class="field-hint" id="contactError" style="color:#B3401F;" hidden></p>
+        <div class="flow-actions">
+          <button type="button" class="btn btn-ghost" id="contactBackBtn" onclick="goStep('stepServices')">Atrás</button>
+          <button type="submit" class="btn btn-primary" id="submitBtn">Enviar solicitud</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Step 4: done -->
+    <section class="flow-step" id="stepDone" hidden>
+      <div class="done-icon">✓</div>
+      <h2 id="doneTitle">Cuenta creada</h2>
+      <p class="flow-sub" id="doneSub">
+        Te hemos enviado un email de confirmación. Ábrelo y confirma tu cuenta antes de iniciar sesión.
+      </p>
+      <div class="summary-box" id="summaryBox"></div>
+      <div class="flow-actions">
+        <button class="btn btn-primary btn-block" onclick="closeFlow(true)">Volver al inicio</button>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+  // ---- Supabase connection (clave pública, segura de exponer aquí) ----
+  var SUPABASE_URL = "https://ookbxfjqvbbqmjaoimkp.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9va2J4ZmpxdmJicW1qYW9pbWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3NDQxMzcsImV4cCI6MjEwNTMyMDEzN30.Cq4oJ83K2-vHT8gJ-qPW50OzUZxXaa_kjpaMLsZWKMQ";
+  var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ---- Catálogo de tipos de negocio y servicios (cargado desde la base de datos) ----
+  var BUSINESS_TYPES = {};
+  var state = { businessKey: null, services: [], otherService: "", fallback: false };
+
+  async function loadCatalog(){
+    var typesRes = await db.from("business_types").select("*").order("sort_order");
+    var servicesRes = await db.from("services_catalog").select("*").order("sort_order");
+
+    if(typesRes.error || servicesRes.error){
+      document.getElementById("businessGrid").innerHTML =
+        '<p style="color:var(--text-muted);grid-column:1/-1;">No se ha podido cargar el catálogo. Recarga la página.</p>';
+      return;
+    }
+
+    (typesRes.data || []).forEach(function(t){
+      BUSINESS_TYPES[t.key] = { label: t.label, services: [] };
+    });
+    (servicesRes.data || []).forEach(function(s){
+      if(BUSINESS_TYPES[s.business_type_key]){
+        BUSINESS_TYPES[s.business_type_key].services.push(s.name);
+      }
+    });
+
+    var grid = document.getElementById("businessGrid");
+    grid.innerHTML = "";
+    Object.keys(BUSINESS_TYPES).forEach(function(key){
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "choice-btn";
+      btn.textContent = BUSINESS_TYPES[key].label;
+      btn.onclick = function(){ selectBusiness(key, btn); };
+      grid.appendChild(btn);
+    });
+  }
+  loadCatalog();
+
+  function selectBusiness(key, btn){
+    state.businessKey = key;
+    state.fallback = false;
+    document.querySelectorAll("#businessGrid .choice-btn").forEach(function(b){ b.classList.remove("selected"); });
+    btn.classList.add("selected");
+    buildServicesList(key);
+    setTimeout(function(){ goStep("stepServices"); }, 120);
+  }
+
+  function buildServicesList(key){
+    var list = document.getElementById("servicesList");
+    list.innerHTML = "";
+    BUSINESS_TYPES[key].services.forEach(function(service, i){
+      var row = document.createElement("div");
+      row.className = "check-row";
+      var id = "svc_" + i;
+      row.innerHTML = '<input type="checkbox" id="' + id + '" value="' + service + '"><label for="' + id + '">' + service + '</label>';
+      list.appendChild(row);
+    });
+  }
+
+  function goContactFallback(){
+    state.fallback = true;
+    state.businessKey = null;
+    document.getElementById("contactProgress").textContent = "Contacto directo";
+    document.getElementById("fallbackCommentField").hidden = false;
+    document.getElementById("fallbackCommentField").querySelector("textarea").required = true;
+    document.getElementById("normalCommentField").hidden = true;
+    document.getElementById("passwordField").hidden = true;
+    document.getElementById("fPassword").required = false;
+    document.getElementById("submitBtn").textContent = "Enviar solicitud";
+    document.getElementById("contactBackBtn").onclick = function(){ goStep("stepBusiness"); };
+    goStep("stepContact");
+  }
+
+  function goStep(id){
+    document.querySelectorAll(".flow-step").forEach(function(s){ s.hidden = true; });
+    document.getElementById(id).hidden = false;
+    if(id === "stepContact" && !state.fallback){
+      document.getElementById("contactProgress").textContent = "Paso 3 de 3";
+      document.getElementById("fallbackCommentField").hidden = true;
+      document.getElementById("normalCommentField").hidden = false;
+      document.getElementById("passwordField").hidden = false;
+      document.getElementById("fPassword").required = true;
+      document.getElementById("submitBtn").textContent = "Crear cuenta";
+      document.getElementById("contactBackBtn").onclick = function(){ goStep("stepServices"); };
+    }
+  }
+
+  function openFlow(){
+    document.getElementById("flowOverlay").hidden = false;
+    goStep("stepBusiness");
+  }
+  function closeFlow(reset){
+    document.getElementById("flowOverlay").hidden = true;
+    if(reset){
+      state = { businessKey: null, services: [], otherService: "", fallback: false };
+      document.querySelectorAll("#businessGrid .choice-btn").forEach(function(b){ b.classList.remove("selected"); });
+      document.getElementById("contactForm").reset();
+      document.getElementById("contactError").hidden = true;
+    }
+  }
+
+  function showContactError(msg){
+    var el = document.getElementById("contactError");
+    el.textContent = msg;
+    el.hidden = false;
+  }
+
+  async function submitFlow(evt){
+    evt.preventDefault();
+    var errEl = document.getElementById("contactError");
+    errEl.hidden = true;
+
+    var name = document.getElementById("fName").value.trim();
+    var businessName = document.getElementById("fBusinessName").value.trim();
+    var email = document.getElementById("fEmail").value.trim();
+    var phone = document.getElementById("fPhone").value.trim();
+    var submitBtn = document.getElementById("submitBtn");
+
+    var services = [];
+    if(!state.fallback){
+      document.querySelectorAll("#servicesList input:checked").forEach(function(cb){ services.push(cb.value); });
+      var other = document.getElementById("otherService").value.trim();
+      if(other) services.push(other + " (otro)");
+    }
+
+    submitBtn.disabled = true;
+
+    // ---- Camino "no encuentro mi negocio": solo guardamos la solicitud ----
+    if(state.fallback){
+      var comment = document.getElementById("fComment").value.trim();
+      var insertRes = await db.from("contact_requests").insert({
+        name: name, business_name: businessName, email: email, phone: phone || null, comment: comment
+      });
+      submitBtn.disabled = false;
+      if(insertRes.error){
+        showContactError("No se ha podido enviar la solicitud: " + insertRes.error.message);
+        return false;
+      }
+      document.getElementById("doneTitle").textContent = "Solicitud enviada";
+      document.getElementById("doneSub").textContent = "Hemos recibido tus datos. Te contactaremos en breve para hablarlo en persona.";
+      document.getElementById("summaryBox").textContent =
+        "Nombre: " + name + "\nNegocio: " + businessName + "\nEmail: " + email + "\nTeléfono: " + (phone || "-") + "\nComentario: " + (comment || "-");
+      goStep("stepDone");
+      return false;
+    }
+
+    // ---- Camino normal: crear cuenta real en Supabase Auth ----
+    var password = document.getElementById("fPassword").value;
+    var comment2 = document.getElementById("fComment2").value.trim();
+
+    var signUpRes = await db.auth.signUp({ email: email, password: password });
+    if(signUpRes.error){
+      submitBtn.disabled = false;
+      showContactError(signUpRes.error.message);
+      return false;
+    }
+    var userId = signUpRes.data.user && signUpRes.data.user.id;
+    if(!userId){
+      submitBtn.disabled = false;
+      showContactError("No se ha podido crear la cuenta. Inténtalo de nuevo.");
+      return false;
+    }
+
+    var businessInsert = await db.from("businesses").insert({
+      auth_user_id: userId,
+      business_name: businessName,
+      business_type_key: state.businessKey,
+      contact_name: name,
+      email: email,
+      phone: phone || null
+    }).select().single();
+
+    submitBtn.disabled = false;
+
+    if(businessInsert.error){
+      showContactError("Tu cuenta se creó, pero hubo un problema guardando los datos del negocio: " + businessInsert.error.message + ". Escríbenos y lo revisamos.");
+      return false;
+    }
+
+    if(services.length){
+      var rows = services.map(function(s){ return { business_id: businessInsert.data.id, service_name: s }; });
+      await db.from("business_services").insert(rows);
+    }
+
+    document.getElementById("doneTitle").textContent = "Cuenta creada";
+    document.getElementById("doneSub").textContent = "Te hemos enviado un email de confirmación a " + email + ". Ábrelo y confirma tu cuenta antes de iniciar sesión.";
+    document.getElementById("summaryBox").textContent =
+      "Negocio: " + businessName + "\nTipo: " + BUSINESS_TYPES[state.businessKey].label + "\nServicios elegidos: " + (services.length ? services.join(", ") : "-") + "\nComentario: " + (comment2 || "-");
+    goStep("stepDone");
+    return false;
+  }
+</script>
+
+</body>
+</html>
