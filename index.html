@@ -262,6 +262,43 @@
 
   .other-field{ margin-top: 6px; }
 
+  /* ---------- Dashboard / admin panel ---------- */
+  .dash-overlay{
+    position: fixed; inset:0; z-index: 55;
+    background: var(--bg);
+    overflow-y:auto;
+  }
+  .dash-overlay[hidden]{ display:none; }
+  .dash-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 20px 0; border-bottom: 1px solid var(--border); margin-bottom: 30px;
+  }
+  .dash-section{ margin-bottom: 40px; }
+  .dash-section h3{ font-family: var(--font-display); font-size: 1.25rem; margin: 0 0 6px; }
+  .dash-section .dash-sub{ color: var(--text-muted); font-size: 0.9rem; margin: 0 0 18px; }
+  .dash-row{
+    display:flex; align-items:center; justify-content:space-between; gap: 14px;
+    padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px;
+    background: var(--surface);
+  }
+  .dash-row .dash-name{ font-weight: 600; font-size: 0.96rem; }
+  .dash-row .dash-meta{ color: var(--text-muted); font-size: 0.82rem; margin-top: 2px; }
+  .badge{ font-size: 0.72rem; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+  .badge-active{ background: var(--accent-soft); color: var(--accent-strong); }
+  .badge-cancelled{ background: var(--border); color: var(--text-muted); }
+  .badge-new{ background: var(--accent-soft); color: var(--accent-strong); }
+  .badge-contacted{ background: var(--border); color: var(--text-muted); }
+  .badge-closed{ background: var(--border); color: var(--text-muted); }
+  .add-service-btn{
+    display:flex; align-items:center; justify-content:space-between; width:100%;
+    padding: 12px 16px; margin-bottom: 8px; border-radius: 10px; border: 1px dashed var(--border);
+    background: transparent; color: var(--text); font-size: 0.92rem; cursor:pointer; text-align:left;
+  }
+  .add-service-btn:hover{ border-color: var(--accent); color: var(--accent); }
+  .admin-business-block{ border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; background: var(--surface); }
+  .admin-business-block .dash-name{ font-size: 1rem; }
+  .admin-business-block .svc-tag{ display:inline-block; font-size:0.78rem; color: var(--text-muted); background: var(--surface-2); padding: 2px 9px; border-radius: 999px; margin: 3px 4px 0 0; }
+
   .done-icon{
     width: 52px; height:52px; border-radius:50%; background: var(--accent-soft); color: var(--accent-strong);
     display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin-bottom: 18px;
@@ -292,6 +329,7 @@
     <div class="brand">Resp<em>i</em>ro</div>
     <nav class="nav-actions">
       <a class="nav-link" href="#como-funciona">Cómo funciona</a>
+      <button class="link-quiet" id="loginNavBtn" onclick="openLogin()" style="text-decoration:none;">Iniciar sesión</button>
       <button class="btn btn-primary btn-sm" onclick="openFlow()">Regístrate</button>
     </nav>
   </div>
@@ -496,6 +534,41 @@
   </div>
 </div>
 
+<!-- ============ Login ============ -->
+<div class="flow-overlay" id="loginOverlay" hidden role="dialog" aria-modal="true" aria-label="Iniciar sesión">
+  <div class="flow-panel">
+    <button class="flow-close" aria-label="Cerrar" onclick="closeLogin()">×</button>
+    <h2>Iniciar sesión</h2>
+    <p class="flow-sub">Entra para ver y gestionar tus automatizaciones.</p>
+    <form id="loginForm" onsubmit="return loginSubmit(event)">
+      <div class="field">
+        <label for="lEmail">Email</label>
+        <input type="email" id="lEmail" required>
+      </div>
+      <div class="field">
+        <label for="lPassword">Contraseña</label>
+        <input type="password" id="lPassword" required>
+      </div>
+      <p class="field-hint" id="loginError" style="color:#B3401F;" hidden></p>
+      <div class="flow-actions">
+        <button type="submit" class="btn btn-primary btn-block" id="loginBtn">Entrar</button>
+      </div>
+    </form>
+    <button class="fallback-link" onclick="closeLogin(); openFlow();">¿No tienes cuenta? Regístrate</button>
+  </div>
+</div>
+
+<!-- ============ Dashboard (cliente o admin) ============ -->
+<div class="dash-overlay" id="dashOverlay" hidden>
+  <div class="wrap" style="max-width:840px; padding-top:10px; padding-bottom:60px;">
+    <div class="dash-header">
+      <div class="brand" style="font-size:1.2rem;">Resp<em>i</em>ro</div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Cerrar sesión</button>
+    </div>
+    <div id="dashContent"><p class="dash-sub">Cargando...</p></div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
   // ---- Supabase connection (clave pública, segura de exponer aquí) ----
@@ -685,6 +758,13 @@
       await db.from("business_services").insert(rows);
     }
 
+    if(signUpRes.data.session){
+      closeFlow(true);
+      updateHeaderAuthState(signUpRes.data.session);
+      await openDashboard();
+      return false;
+    }
+
     document.getElementById("doneTitle").textContent = "Cuenta creada";
     document.getElementById("doneSub").textContent = "Te hemos enviado un email de confirmación a " + email + ". Ábrelo y confirma tu cuenta antes de iniciar sesión.";
     document.getElementById("summaryBox").textContent =
@@ -692,6 +772,192 @@
     goStep("stepDone");
     return false;
   }
+
+  // ================= Login =================
+  function openLogin(){ document.getElementById("loginOverlay").hidden = false; }
+  function closeLogin(){
+    document.getElementById("loginOverlay").hidden = true;
+    document.getElementById("loginError").hidden = true;
+    document.getElementById("loginForm").reset();
+  }
+
+  async function loginSubmit(evt){
+    evt.preventDefault();
+    var errEl = document.getElementById("loginError");
+    errEl.hidden = true;
+    var btn = document.getElementById("loginBtn");
+    btn.disabled = true;
+
+    var email = document.getElementById("lEmail").value.trim();
+    var password = document.getElementById("lPassword").value;
+
+    var res = await db.auth.signInWithPassword({ email: email, password: password });
+    btn.disabled = false;
+    if(res.error){
+      errEl.textContent = "No hemos podido iniciar sesión: " + res.error.message;
+      errEl.hidden = false;
+      return false;
+    }
+    closeLogin();
+    updateHeaderAuthState(res.data.session);
+    await openDashboard();
+    return false;
+  }
+
+  async function logout(){
+    await db.auth.signOut();
+    document.getElementById("dashOverlay").hidden = true;
+    updateHeaderAuthState(null);
+  }
+
+  async function isAdmin(userId){
+    var res = await db.from("admins").select("auth_user_id").eq("auth_user_id", userId).maybeSingle();
+    return !res.error && !!res.data;
+  }
+
+  function updateHeaderAuthState(session){
+    var loginBtn = document.getElementById("loginNavBtn");
+    if(session && session.user){
+      loginBtn.textContent = "Mi panel";
+      loginBtn.onclick = openDashboard;
+    } else {
+      loginBtn.textContent = "Iniciar sesión";
+      loginBtn.onclick = openLogin;
+    }
+  }
+
+  // ================= Dashboard =================
+  async function openDashboard(){
+    var sessionRes = await db.auth.getSession();
+    var session = sessionRes.data.session;
+    if(!session){ openLogin(); return; }
+
+    updateHeaderAuthState(session);
+    document.getElementById("dashOverlay").hidden = false;
+    var content = document.getElementById("dashContent");
+    content.innerHTML = '<p class="dash-sub">Cargando...</p>';
+
+    if(await isAdmin(session.user.id)){
+      await loadAdminDashboard();
+    } else {
+      await loadClientDashboard(session.user.id);
+    }
+  }
+
+  async function loadClientDashboard(userId){
+    var content = document.getElementById("dashContent");
+    var bizRes = await db.from("businesses").select("*").eq("auth_user_id", userId).maybeSingle();
+
+    if(bizRes.error || !bizRes.data){
+      content.innerHTML = '<p class="dash-sub">No encontramos un negocio asociado a tu cuenta. Escríbenos si crees que es un error.</p>';
+      return;
+    }
+    var biz = bizRes.data;
+    var svcRes = await db.from("business_services").select("*").eq("business_id", biz.id).order("created_at");
+    var services = svcRes.data || [];
+    var typeInfo = BUSINESS_TYPES[biz.business_type_key];
+
+    var activeNames = services.filter(function(s){ return s.status === "active"; }).map(function(s){ return s.service_name; });
+    var available = (typeInfo ? typeInfo.services : []).filter(function(s){ return activeNames.indexOf(s) === -1; });
+
+    var html = '';
+    html += '<div class="dash-section"><h3>' + biz.business_name + '</h3><p class="dash-sub">' + (typeInfo ? typeInfo.label : "") + ' · ' + biz.email + '</p></div>';
+
+    html += '<div class="dash-section"><h3>Tus automatizaciones</h3><p class="dash-sub">Activa o cancela lo que necesites.</p>';
+    if(!services.length){
+      html += '<p class="dash-sub">Todavía no tienes ninguna contratada.</p>';
+    } else {
+      services.forEach(function(s){
+        html += '<div class="dash-row"><div><div class="dash-name">' + s.service_name + '</div>' +
+          '<div class="dash-meta">' + (s.status === "active" ? "Activa" : "Cancelada") + '</div></div>';
+        if(s.status === "active"){
+          html += '<button class="btn btn-ghost btn-sm" onclick="cancelService(' + s.id + ')">Cancelar</button>';
+        } else {
+          html += '<span class="badge badge-cancelled">Cancelada</span>';
+        }
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+
+    if(available.length){
+      html += '<div class="dash-section"><h3>Añadir una nueva</h3><p class="dash-sub">Del catálogo de ' + (typeInfo ? typeInfo.label.toLowerCase() : "tu negocio") + '.</p>';
+      available.forEach(function(s){
+        html += '<button class="add-service-btn" onclick="addService(\'' + biz.id + '\', \'' + s.replace(/'/g,"\\'") + '\')"><span>' + s + '</span><span>+ Añadir</span></button>';
+      });
+      html += '</div>';
+    }
+
+    content.innerHTML = html;
+  }
+
+  async function cancelService(id){
+    await db.from("business_services").update({ status: "cancelled", cancelled_at: new Date().toISOString() }).eq("id", id);
+    var sessionRes = await db.auth.getSession();
+    await loadClientDashboard(sessionRes.data.session.user.id);
+  }
+
+  async function addService(businessId, serviceName){
+    await db.from("business_services").insert({ business_id: businessId, service_name: serviceName, status: "active" });
+    var sessionRes = await db.auth.getSession();
+    await loadClientDashboard(sessionRes.data.session.user.id);
+  }
+
+  async function loadAdminDashboard(){
+    var content = document.getElementById("dashContent");
+    var bizRes = await db.from("businesses").select("*").order("created_at", { ascending: false });
+    var svcRes = await db.from("business_services").select("*");
+    var leadsRes = await db.from("contact_requests").select("*").order("created_at", { ascending: false });
+
+    var businesses = bizRes.data || [];
+    var services = svcRes.data || [];
+    var leads = leadsRes.data || [];
+
+    var html = '<div class="dash-section"><h3>Negocios registrados (' + businesses.length + ')</h3>';
+    businesses.forEach(function(b){
+      var svcs = services.filter(function(s){ return s.business_id === b.id; });
+      var typeInfo = BUSINESS_TYPES[b.business_type_key];
+      html += '<div class="admin-business-block"><div class="dash-name">' + b.business_name + '</div>' +
+        '<div class="dash-meta">' + (typeInfo ? typeInfo.label : b.business_type_key) + ' · ' + b.contact_name + ' · ' + b.email + (b.phone ? ' · ' + b.phone : '') + '</div><div style="margin-top:8px;">';
+      if(!svcs.length){
+        html += '<span class="dash-meta">Sin servicios contratados</span>';
+      } else {
+        svcs.forEach(function(s){
+          html += '<span class="svc-tag">' + s.service_name + (s.status === "cancelled" ? " (cancelado)" : "") + '</span>';
+        });
+      }
+      html += '</div></div>';
+    });
+    if(!businesses.length){ html += '<p class="dash-sub">Todavía no hay negocios registrados.</p>'; }
+    html += '</div>';
+
+    html += '<div class="dash-section"><h3>Solicitudes de contacto (' + leads.length + ')</h3>';
+    leads.forEach(function(l){
+      html += '<div class="dash-row" style="align-items:flex-start;"><div><div class="dash-name">' + l.name + ' — ' + l.business_name + '</div>' +
+        '<div class="dash-meta">' + l.email + (l.phone ? ' · ' + l.phone : '') + '</div>' +
+        (l.comment ? '<div class="dash-meta" style="margin-top:6px;">' + l.comment + '</div>' : '') + '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">' +
+        '<span class="badge badge-' + l.status + '">' + l.status + '</span>' +
+        (l.status !== "contacted" ? '<button class="btn btn-ghost btn-sm" onclick="setLeadStatus(' + l.id + ',\'contacted\')">Marcar contactada</button>' : '') +
+        (l.status !== "closed" ? '<button class="btn btn-ghost btn-sm" onclick="setLeadStatus(' + l.id + ',\'closed\')">Cerrar</button>' : '') +
+        '</div></div>';
+    });
+    if(!leads.length){ html += '<p class="dash-sub">No hay solicitudes pendientes.</p>'; }
+    html += '</div>';
+
+    content.innerHTML = html;
+  }
+
+  async function setLeadStatus(id, status){
+    await db.from("contact_requests").update({ status: status }).eq("id", id);
+    await loadAdminDashboard();
+  }
+
+  // ---- Al cargar la página, comprobar si ya hay sesión activa ----
+  (async function initSession(){
+    var sessionRes = await db.auth.getSession();
+    updateHeaderAuthState(sessionRes.data.session);
+  })();
 </script>
 
 </body>
