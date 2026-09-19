@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Condiciones del servicio — Respiro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F5F2E9; --surface: #FFFFFF; --text: #16213E; --text-muted: #5B6478;
+    --accent: #B87A20; --border: #E4DFD1;
+    --font-display: "Fraunces", Georgia, serif; --font-body: "Work Sans", -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #101A2E; --surface: #16223B; --text: #F1EEE5; --text-muted: #A9B2C6;
+      --accent: #E8A33D; --border: #29365a;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #101A2E; --surface: #16223B; --text: #F1EEE5; --text-muted: #A9B2C6;
+    --accent: #E8A33D; --border: #29365a;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:var(--font-body); line-height:1.65; }
+  .wrap{ max-width:760px; margin:0 auto; padding:60px 24px 100px; }
+  a{ color:var(--accent); }
+  .brand{ font-family:var(--font-display); font-size:1.3rem; font-weight:600; margin-bottom:40px; }
+  .brand em{ font-style:normal; color:var(--accent); }
+  h1{ font-family:var(--font-display); font-size:2rem; margin-bottom:6px; }
+  .updated{ color:var(--text-muted); font-size:0.9rem; margin-bottom:40px; }
+  h2{ font-family:var(--font-display); font-size:1.25rem; margin-top:40px; }
+  p, li{ color:var(--text); font-size:0.98rem; }
+  .placeholder{ background: color-mix(in srgb, var(--accent) 20%, transparent); padding:1px 6px; border-radius:4px; }
+  .back{ display:inline-block; margin-top:50px; color:var(--text-muted); text-decoration:underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">Resp<em>i</em>ro</div>
+  <h1>Condiciones del servicio</h1>
+  <p class="updated">Última actualización: <span class="placeholder">[FECHA]</span></p>
+
+  <h2>1. Quiénes somos</h2>
+  <p>
+    Estas condiciones regulan el uso de la web y el servicio de automatizaciones prestado por
+    <span class="placeholder">[NOMBRE Y APELLIDOS O RAZÓN SOCIAL]</span>, con NIF <span class="placeholder">[NIF]</span>
+    (en adelante, "Respiro"), a los negocios que se registran en ella (en adelante, "el cliente").
+    Al registrarte, aceptas estas condiciones junto con la <a href="privacidad.html">política de privacidad</a>.
+  </p>
+
+  <h2>2. Qué incluye el servicio</h2>
+  <p>Respiro monta y mantiene automatizaciones a medida (reservas, atención al cliente, gestión de stock, reseñas y similares) según el catálogo mostrado para el tipo de negocio del cliente en el momento del registro. Cualquier necesidad fuera de ese catálogo se acuerda de forma independiente antes de montarse, y no está cubierta por la mensualidad hasta que ambas partes lo confirmen expresamente.</p>
+  <p>El servicio se presta con los medios técnicos disponibles en cada momento (actualmente basado en n8n y proveedores de mensajería como WhatsApp). Respiro no garantiza una disponibilidad del 100%, especialmente mientras el número de clientes y la infraestructura estén en fase inicial, pero se compromete a avisar y resolver cualquier incidencia con la mayor diligencia posible.</p>
+
+  <h2>3. Precio y forma de pago</h2>
+  <p>El precio vigente en cada momento es el publicado en la web. Actualmente consiste en una cuota de alta única y una mensualidad recurrente, cobradas a través de Stripe. Los precios pueden actualizarse; cualquier cambio se notificará al cliente con antelación razonable y no afectará a mensualidades ya facturadas.</p>
+  <p>El impago de una mensualidad puede dar lugar a la suspensión del servicio hasta su regularización.</p>
+
+  <h2>4. Cancelación</h2>
+  <p>El cliente puede cancelar su suscripción en cualquier momento desde su propio panel, sin necesidad de preaviso ni permanencia mínima. La cancelación surte efecto al final del periodo ya pagado; no se realizan devoluciones de la parte proporcional del periodo en curso salvo que la ley aplicable indique lo contrario.</p>
+  <p>Respiro se reserva el derecho a suspender el servicio a un cliente en caso de impago prolongado o uso indebido del servicio.</p>
+
+  <h2>5. Obligaciones del cliente</h2>
+  <ul>
+    <li>Proporcionar datos veraces al registrarse.</li>
+    <li>Usar el servicio conforme a la ley, sin destinarlo a actividades ilícitas.</li>
+    <li>Custodiar su contraseña de acceso al panel.</li>
+  </ul>
+
+  <h2>6. Responsabilidad</h2>
+  <p>Respiro pone la diligencia razonable en la prestación del servicio, pero no será responsable de daños indirectos o lucro cesante derivados de interrupciones del servicio, fallos de terceros (proveedores de mensajería, pasarela de pago, hosting) o causas de fuerza mayor. La responsabilidad total de Respiro frente al cliente, en cualquier caso, quedará limitada al importe abonado por el cliente en los tres meses anteriores al hecho que la origine.</p>
+
+  <h2>7. Propiedad intelectual</h2>
+  <p>El código, diseño y contenidos de la web pertenecen a Respiro. Las automatizaciones montadas específicamente para un cliente pueden ser utilizadas por este mientras mantenga su suscripción activa, salvo acuerdo distinto por escrito.</p>
+
+  <h2>8. Modificación de estas condiciones</h2>
+  <p>Respiro puede actualizar estas condiciones para reflejar cambios en el servicio o en la normativa aplicable. Los cambios relevantes se notificarán al cliente antes de su entrada en vigor.</p>
+
+  <h2>9. Ley aplicable y jurisdicción</h2>
+  <p>Estas condiciones se rigen por la legislación española. Para cualquier controversia, y sin perjuicio de los derechos que asistan al cliente como consumidor si aplica, las partes se someten a los juzgados y tribunales de <span class="placeholder">[CIUDAD]</span>.</p>
+
+  <h2>10. Contacto</h2>
+  <p>Para cualquier duda sobre estas condiciones, puedes escribir a <span class="placeholder">[EMAIL DE CONTACTO]</span>.</p>
+
+  <a class="back" href="javascript:history.back()">← Volver</a>
+</div>
+</body>
+</html>
