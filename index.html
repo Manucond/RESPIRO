@@ -486,7 +486,7 @@
   <footer>
     <div class="wrap">
       <div class="brand" style="font-size:1.1rem;">Resp<em>i</em>ro</div>
-      <p class="fine">© 2026 Respiro. Automatizaciones a medida para pequeños negocios.</p>
+      <p class="fine">© 2026 Respiro. Automatizaciones a medida para pequeños negocios. <a href="privacidad.html" style="color:inherit;">Política de privacidad</a></p>
     </div>
   </footer>
 
@@ -556,6 +556,10 @@
         <div class="field" id="normalCommentField">
           <label for="fComment2">Algo más que quieras comentarnos (opcional)</label>
           <textarea id="fComment2"></textarea>
+        </div>
+        <div class="check-row">
+          <input type="checkbox" id="fPrivacy" required>
+          <label for="fPrivacy">He leído y acepto la <a href="privacidad.html" target="_blank" rel="noopener" style="color:var(--accent);">política de privacidad</a>*</label>
         </div>
         <p class="field-hint" id="contactError" style="color:#B3401F;" hidden></p>
         <div class="flow-actions">
@@ -764,7 +768,8 @@
     if(state.fallback){
       var comment = document.getElementById("fComment").value.trim();
       var insertRes = await db.from("contact_requests").insert({
-        name: name, business_name: businessName, email: email, phone: phone || null, comment: comment
+        name: name, business_name: businessName, email: email, phone: phone || null, comment: comment,
+        privacy_accepted_at: new Date().toISOString()
       });
       submitBtn.disabled = false;
       if(insertRes.error){
@@ -798,12 +803,15 @@
 
     submitBtn.disabled = false;
 
+    var privacyAcceptedAt = new Date().toISOString();
+
     // Sin sesión activa todavía (falta confirmar el email): guardamos los datos
     // y los completamos automáticamente en el primer inicio de sesión.
     if(!signUpRes.data.session){
       savePendingSignup(email, {
         businessName: businessName, businessType: state.businessKey,
-        contactName: name, email: email, phone: phone, services: services
+        contactName: name, email: email, phone: phone, services: services,
+        privacyAcceptedAt: privacyAcceptedAt
       });
       document.getElementById("doneTitle").textContent = "Cuenta creada";
       document.getElementById("doneSub").textContent = "Te hemos enviado un email de confirmación a " + email + ". Confírmalo y luego inicia sesión — completaremos tu registro automáticamente.";
@@ -819,7 +827,8 @@
       business_type_key: state.businessKey,
       contact_name: name,
       email: email,
-      phone: phone || null
+      phone: phone || null,
+      privacy_accepted_at: privacyAcceptedAt
     }).select().single();
 
     if(businessInsert.error){
@@ -926,7 +935,8 @@
       business_type_key: p.businessType,
       contact_name: p.contactName,
       email: p.email,
-      phone: p.phone || null
+      phone: p.phone || null,
+      privacy_accepted_at: p.privacyAcceptedAt || new Date().toISOString()
     }).select().single();
 
     if(businessInsert.error) return false;

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de privacidad — Respiro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F5F2E9; --surface: #FFFFFF; --text: #16213E; --text-muted: #5B6478;
+    --accent: #B87A20; --border: #E4DFD1;
+    --font-display: "Fraunces", Georgia, serif; --font-body: "Work Sans", -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #101A2E; --surface: #16223B; --text: #F1EEE5; --text-muted: #A9B2C6;
+      --accent: #E8A33D; --border: #29365a;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #101A2E; --surface: #16223B; --text: #F1EEE5; --text-muted: #A9B2C6;
+    --accent: #E8A33D; --border: #29365a;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:var(--font-body); line-height:1.65; }
+  .wrap{ max-width:760px; margin:0 auto; padding:60px 24px 100px; }
+  a{ color:var(--accent); }
+  .brand{ font-family:var(--font-display); font-size:1.3rem; font-weight:600; margin-bottom:40px; }
+  .brand em{ font-style:normal; color:var(--accent); }
+  h1{ font-family:var(--font-display); font-size:2rem; margin-bottom:6px; }
+  .updated{ color:var(--text-muted); font-size:0.9rem; margin-bottom:40px; }
+  h2{ font-family:var(--font-display); font-size:1.25rem; margin-top:40px; }
+  p, li{ color:var(--text); font-size:0.98rem; }
+  .placeholder{ background: color-mix(in srgb, var(--accent) 20%, transparent); padding:1px 6px; border-radius:4px; }
+  .back{ display:inline-block; margin-top:50px; color:var(--text-muted); text-decoration:underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">Resp<em>i</em>ro</div>
+  <h1>Política de privacidad</h1>
+  <p class="updated">Última actualización: <span class="placeholder">[FECHA]</span></p>
+
+  <h2>1. Responsable del tratamiento</h2>
+  <p>
+    <span class="placeholder">[NOMBRE Y APELLIDOS O RAZÓN SOCIAL]</span>,
+    con NIF <span class="placeholder">[NIF]</span>,
+    domicilio en <span class="placeholder">[DIRECCIÓN]</span>,
+    correo de contacto <span class="placeholder">[EMAIL DE CONTACTO]</span>
+    (en adelante, "Respiro"), es responsable del tratamiento de los datos personales que se recogen a través de este sitio web.
+  </p>
+
+  <h2>2. Datos que recogemos</h2>
+  <p>Recogemos los datos que nos facilitas directamente al registrarte o contactarnos:</p>
+  <ul>
+    <li>Nombre y apellidos</li>
+    <li>Nombre del negocio y tipo de negocio</li>
+    <li>Correo electrónico y teléfono</li>
+    <li>Contraseña (almacenada de forma cifrada, nunca en texto plano)</li>
+    <li>Servicios que solicitas automatizar</li>
+    <li>Datos de pago, gestionados directamente por Stripe (ver punto 4) — nosotros no almacenamos números de tarjeta</li>
+  </ul>
+
+  <h2>3. Finalidad y legitimación</h2>
+  <p>Tratamos tus datos para:</p>
+  <ul>
+    <li>Gestionar tu registro y darte acceso a tu panel de cliente — <em>ejecución del contrato de servicios</em>.</li>
+    <li>Gestionar el cobro de la alta y la mensualidad a través de Stripe — <em>ejecución del contrato</em>.</li>
+    <li>Responder a tu solicitud de contacto — <em>consentimiento</em>, otorgado al enviar el formulario.</li>
+    <li>Cumplir obligaciones fiscales y contables — <em>obligación legal</em>.</li>
+  </ul>
+
+  <h2>4. Destinatarios de los datos</h2>
+  <p>No vendemos ni cedemos tus datos a terceros con fines comerciales. Compartimos datos únicamente con los proveedores que nos permiten prestar el servicio, que actúan como encargados del tratamiento:</p>
+  <ul>
+    <li><strong>Supabase Inc.</strong> — alojamiento de la base de datos y autenticación.</li>
+    <li><strong>Stripe Payments Europe, Ltd.</strong> — procesamiento de pagos y gestión de suscripciones.</li>
+    <li><span class="placeholder">[VERCEL INC. — alojamiento de la web, si aplica]</span></li>
+  </ul>
+
+  <h2>5. Conservación de los datos</h2>
+  <p>Conservamos tus datos mientras exista una relación contractual activa, y posteriormente durante los plazos exigidos por la normativa fiscal y mercantil aplicable (con carácter general, <span class="placeholder">[X AÑOS, p.ej. 6 AÑOS]</span>).</p>
+
+  <h2>6. Tus derechos</h2>
+  <p>Puedes ejercer en cualquier momento tus derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad de tus datos escribiendo a <span class="placeholder">[EMAIL DE CONTACTO]</span>. También puedes cancelar tu suscripción y eliminar tu cuenta desde tu propio panel de cliente.</p>
+  <p>Si consideras que no hemos atendido correctamente tu solicitud, puedes presentar una reclamación ante la <a href="https://www.aepd.es" target="_blank" rel="noopener">Agencia Española de Protección de Datos (AEPD)</a>.</p>
+
+  <h2>7. Seguridad</h2>
+  <p>Aplicamos medidas técnicas y organizativas razonables para proteger tus datos, incluyendo cifrado de contraseñas y control de acceso mediante políticas de seguridad a nivel de fila en nuestra base de datos, de forma que cada negocio solo puede acceder a sus propios datos.</p>
+
+  <a class="back" href="javascript:history.back()">← Volver</a>
+</div>
+</body>
+</html>
