@@ -440,8 +440,8 @@
         </div>
         <div class="step-item">
           <p class="step-num">2</p>
-          <h3>Elige qué automatizar</h3>
-          <p>Seleccionas los procesos que te gustaría dejar de hacer a mano.</p>
+          <h3>Ve lo que incluimos</h3>
+          <p>Te enseñamos todo lo que automatizamos para tu tipo de negocio.</p>
         </div>
         <div class="step-item">
           <p class="step-num">3</p>
@@ -509,11 +509,11 @@
     <!-- Step 2: services -->
     <section class="flow-step" id="stepServices" hidden>
       <p class="flow-progress">Paso 2 de 3</p>
-      <h2>¿Qué te gustaría automatizar?</h2>
-      <p class="flow-sub">Elige todo lo que te interese. Más adelante lo concretamos juntos.</p>
+      <h2>Esto es lo que hacemos por tu negocio</h2>
+      <p class="flow-sub">Se incluye todo lo de abajo. Si necesitas algo más, cuéntanoslo y lo revisamos juntos.</p>
       <div id="servicesList"></div>
       <div class="field other-field">
-        <label for="otherService">¿Alguna otra tarea que te gustaría automatizar?</label>
+        <label for="otherService">¿Necesitas algo que no esté aquí?</label>
         <input type="text" id="otherService" placeholder="Opcional">
       </div>
       <div class="flow-actions">
@@ -684,11 +684,10 @@
   function buildServicesList(key){
     var list = document.getElementById("servicesList");
     list.innerHTML = "";
-    BUSINESS_TYPES[key].services.forEach(function(service, i){
+    BUSINESS_TYPES[key].services.forEach(function(service){
       var row = document.createElement("div");
       row.className = "check-row";
-      var id = "svc_" + i;
-      row.innerHTML = '<input type="checkbox" id="' + id + '" value="' + service + '"><label for="' + id + '">' + service + '</label>';
+      row.innerHTML = '<span style="color:var(--accent);font-weight:700;">✓</span><label>' + service + '</label>';
       list.appendChild(row);
     });
   }
@@ -754,9 +753,9 @@
 
     var services = [];
     if(!state.fallback){
-      document.querySelectorAll("#servicesList input:checked").forEach(function(cb){ services.push(cb.value); });
+      services = (BUSINESS_TYPES[state.businessKey] ? BUSINESS_TYPES[state.businessKey].services.slice() : []);
       var other = document.getElementById("otherService").value.trim();
-      if(other) services.push(other + " (otro)");
+      if(other) services.push(other + " (a medida)");
     }
 
     submitBtn.disabled = true;
@@ -974,57 +973,29 @@
       return;
     }
     var biz = bizRes.data;
-    var svcRes = await db.from("business_services").select("*").eq("business_id", biz.id).order("created_at");
+    var svcRes = await db.from("business_services").select("*").eq("business_id", biz.id).eq("status", "active");
     var services = svcRes.data || [];
     var typeInfo = BUSINESS_TYPES[biz.business_type_key];
+    var totalHours = services.reduce(function(sum, s){ return sum + (SERVICE_HOURS[s.service_name] || 3); }, 0);
 
-    var activeNames = services.filter(function(s){ return s.status === "active"; }).map(function(s){ return s.service_name; });
-    var available = (typeInfo ? typeInfo.services : []).filter(function(s){ return activeNames.indexOf(s) === -1; });
-    var totalHours = activeNames.reduce(function(sum, name){ return sum + (SERVICE_HOURS[name] || 3); }, 0);
+    var subLabels = { none: "Sin suscripción todavía", active: "Activo", past_due: "Pago pendiente", cancelled: "Cancelado" };
+    var badgeClass = { none: "badge-cancelled", active: "badge-active", past_due: "badge-contacted", cancelled: "badge-cancelled" };
 
     var html = '';
-    html += '<div class="dash-section"><h3>' + biz.business_name + '</h3><p class="dash-sub">' + (typeInfo ? typeInfo.label : "") + ' · ' + biz.email + '</p></div>';
-
-    if(activeNames.length){
-      html += '<div class="free-block" style="margin-bottom:30px;"><span>Ahorras aprox. cada mes</span><span>' + totalHours + ' horas</span></div>';
+    html += '<div class="admin-business-block">';
+    html += '<div class="dash-name" style="font-size:1.15rem;">' + biz.business_name + '</div>';
+    html += '<div class="dash-meta">' + (typeInfo ? typeInfo.label : "") + ' · ' + biz.email + '</div>';
+    html += '<div style="margin-top:14px;"><span class="badge ' + (badgeClass[biz.subscription_status] || "badge-cancelled") + '">' + (subLabels[biz.subscription_status] || biz.subscription_status) + '</span></div>';
+    if(totalHours){
+      html += '<div class="free-block" style="margin-top:18px;"><span>Ahorras aprox. cada mes</span><span>' + totalHours + ' horas</span></div>';
     }
-
-    var subLabels = { none: "Sin suscripción todavía", active: "Suscripción activa", past_due: "Pago pendiente", cancelled: "Suscripción cancelada" };
-    html += '<div class="dash-section"><h3>Suscripción</h3>';
-    html += '<div class="dash-row"><div><div class="dash-name">' + (subLabels[biz.subscription_status] || biz.subscription_status) + '</div></div>';
+    html += '<div style="margin-top:18px;">';
     if(biz.subscription_status === "active" || biz.subscription_status === "past_due"){
       html += '<button class="btn btn-ghost btn-sm" onclick="manageSubscription()">Gestionar suscripción</button>';
     } else {
       html += '<button class="btn btn-primary btn-sm" onclick="subscribeNow()">Suscribirse</button>';
     }
     html += '</div></div>';
-
-    html += '<div class="dash-section"><h3>Tus automatizaciones</h3><p class="dash-sub">Activa o cancela lo que necesites.</p>';
-    var subscriptionActive = biz.subscription_status === "active";
-    if(!services.length){
-      html += '<p class="dash-sub">Todavía no tienes ninguna contratada.</p>';
-    } else {
-      services.forEach(function(s){
-        var label = s.status !== "active" ? "Cancelada" : (subscriptionActive ? "Activa" : "En tu lista (pendiente de suscripción)");
-        html += '<div class="dash-row"><div><div class="dash-name">' + s.service_name + '</div>' +
-          '<div class="dash-meta">' + label + '</div></div>';
-        if(s.status === "active"){
-          html += '<button class="btn btn-ghost btn-sm" onclick="cancelService(' + s.id + ')">Cancelar</button>';
-        } else {
-          html += '<span class="badge badge-cancelled">Cancelada</span>';
-        }
-        html += '</div>';
-      });
-    }
-    html += '</div>';
-
-    if(available.length){
-      html += '<div class="dash-section"><h3>Añadir una nueva</h3><p class="dash-sub">Del catálogo de ' + (typeInfo ? typeInfo.label.toLowerCase() : "tu negocio") + '.</p>';
-      available.forEach(function(s){
-        html += '<button class="add-service-btn" onclick="addService(\'' + biz.id + '\', \'' + s.replace(/'/g,"\\'") + '\')"><span>' + s + '</span><span>+ Añadir</span></button>';
-      });
-      html += '</div>';
-    }
 
     content.innerHTML = html;
   }
