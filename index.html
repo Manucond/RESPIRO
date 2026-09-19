@@ -1000,12 +1000,14 @@
     html += '</div></div>';
 
     html += '<div class="dash-section"><h3>Tus automatizaciones</h3><p class="dash-sub">Activa o cancela lo que necesites.</p>';
+    var subscriptionActive = biz.subscription_status === "active";
     if(!services.length){
       html += '<p class="dash-sub">Todavía no tienes ninguna contratada.</p>';
     } else {
       services.forEach(function(s){
+        var label = s.status !== "active" ? "Cancelada" : (subscriptionActive ? "Activa" : "En tu lista (pendiente de suscripción)");
         html += '<div class="dash-row"><div><div class="dash-name">' + s.service_name + '</div>' +
-          '<div class="dash-meta">' + (s.status === "active" ? "Activa" : "Cancelada") + '</div></div>';
+          '<div class="dash-meta">' + label + '</div></div>';
         if(s.status === "active"){
           html += '<button class="btn btn-ghost btn-sm" onclick="cancelService(' + s.id + ')">Cancelar</button>';
         } else {
