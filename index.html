@@ -989,6 +989,16 @@
       html += '<div class="free-block" style="margin-bottom:30px;"><span>Ahorras aprox. cada mes</span><span>' + totalHours + ' horas</span></div>';
     }
 
+    var subLabels = { none: "Sin suscripción todavía", active: "Suscripción activa", past_due: "Pago pendiente", cancelled: "Suscripción cancelada" };
+    html += '<div class="dash-section"><h3>Suscripción</h3>';
+    html += '<div class="dash-row"><div><div class="dash-name">' + (subLabels[biz.subscription_status] || biz.subscription_status) + '</div></div>';
+    if(biz.subscription_status === "active" || biz.subscription_status === "past_due"){
+      html += '<button class="btn btn-ghost btn-sm" onclick="manageSubscription()">Gestionar suscripción</button>';
+    } else {
+      html += '<button class="btn btn-primary btn-sm" onclick="subscribeNow()">Suscribirse</button>';
+    }
+    html += '</div></div>';
+
     html += '<div class="dash-section"><h3>Tus automatizaciones</h3><p class="dash-sub">Activa o cancela lo que necesites.</p>';
     if(!services.length){
       html += '<p class="dash-sub">Todavía no tienes ninguna contratada.</p>';
@@ -1015,6 +1025,31 @@
     }
 
     content.innerHTML = html;
+  }
+
+  async function callFunction(name){
+    var sessionRes = await db.auth.getSession();
+    var session = sessionRes.data.session;
+    if(!session){ openLogin(); return null; }
+    var res = await fetch(SUPABASE_URL + "/functions/v1/" + name, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.access_token },
+      body: JSON.stringify({ returnUrl: window.location.origin + window.location.pathname })
+    });
+    var data = await res.json().catch(function(){ return {}; });
+    return data;
+  }
+
+  async function subscribeNow(){
+    var data = await callFunction("create-checkout");
+    if(data && data.url){ window.location.href = data.url; }
+    else { alert((data && data.error) || "No se ha podido iniciar el pago. Inténtalo de nuevo."); }
+  }
+
+  async function manageSubscription(){
+    var data = await callFunction("create-portal-session");
+    if(data && data.url){ window.location.href = data.url; }
+    else { alert((data && data.error) || "No se ha podido abrir la gestión de la suscripción."); }
   }
 
   async function cancelService(id){
