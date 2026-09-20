@@ -747,6 +747,7 @@
     if(id === "stepContact" && !state.fallback){
       document.getElementById("contactProgress").textContent = "Paso 3 de 3";
       document.getElementById("fallbackCommentField").hidden = true;
+      document.getElementById("fallbackCommentField").querySelector("textarea").required = false;
       document.getElementById("normalCommentField").hidden = false;
       document.getElementById("passwordField").hidden = false;
       document.getElementById("fPassword").required = true;
