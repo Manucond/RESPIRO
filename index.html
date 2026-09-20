@@ -810,13 +810,25 @@
     // ---- Camino "no encuentro mi negocio": solo guardamos la solicitud ----
     if(state.fallback){
       var comment = document.getElementById("fComment").value.trim();
-      var insertRes = await db.from("contact_requests").insert({
-        name: name, business_name: businessName, email: email, phone: phone || null, comment: comment,
-        privacy_accepted_at: new Date().toISOString()
-      });
+      var sendError = null;
+      try {
+        var sendRes = await fetch(SUPABASE_URL + "/functions/v1/submit-contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_ANON_KEY, "apikey": SUPABASE_ANON_KEY },
+          body: JSON.stringify({
+            name: name, business_name: businessName, email: email, phone: phone, comment: comment,
+            captchaToken: captcha
+          })
+        });
+        var sendData = await sendRes.json().catch(function(){ return {}; });
+        if(!sendRes.ok) sendError = sendData.error || "Inténtalo de nuevo.";
+      } catch(e) {
+        sendError = "Comprueba tu conexión e inténtalo de nuevo.";
+      }
       submitBtn.disabled = false;
-      if(insertRes.error){
-        showContactError("No se ha podido enviar la solicitud: " + insertRes.error.message);
+      if(sendError){
+        resetCaptcha("contactCaptcha");
+        showContactError("No se ha podido enviar la solicitud: " + sendError);
         return false;
       }
       document.getElementById("doneTitle").textContent = "Solicitud enviada";
