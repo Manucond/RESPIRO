@@ -44,14 +44,16 @@ Deno.serve(async (req) => {
   if (!captchaToken) return json({ error: "Falta la verificación de seguridad." }, 400);
 
   // Verificar el token con Cloudflare Turnstile
+  const params = new URLSearchParams({
+    secret: Deno.env.get("TURNSTILE_SECRET_KEY") ?? "",
+    response: captchaToken,
+  });
+  const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim();
+  if (ip) params.set("remoteip", ip);
   const verify = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      secret: Deno.env.get("TURNSTILE_SECRET_KEY") ?? "",
-      response: captchaToken,
-      remoteip: req.headers.get("cf-connecting-ip") ?? "",
-    }),
+    body: params,
   });
   const verifyData = await verify.json().catch(() => ({}));
   if (!verifyData.success) return json({ error: "No se ha podido verificar que eres una persona." }, 400);

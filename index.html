@@ -755,6 +755,8 @@
       document.getElementById("contactBackBtn").onclick = function(){ goStep("stepServices"); };
     }
     if(id === "stepContact") showCaptcha("contactCaptcha");
+    // El token de Turnstile es de un solo uso: al terminar el envío pedimos uno nuevo.
+    if(id === "stepDone") resetCaptcha("contactCaptcha");
   }
 
   function openFlow(){
@@ -763,6 +765,7 @@
   }
   function closeFlow(reset){
     document.getElementById("flowOverlay").hidden = true;
+    resetCaptcha("contactCaptcha");
     if(reset){
       state = { businessKey: null, services: [], otherService: "", fallback: false };
       document.querySelectorAll("#businessGrid .choice-btn").forEach(function(b){ b.classList.remove("selected"); });
@@ -853,6 +856,7 @@
     }
     var userId = signUpRes.data.user && signUpRes.data.user.id;
     if(!userId){
+      resetCaptcha("contactCaptcha");
       submitBtn.disabled = false;
       showContactError("No se ha podido crear la cuenta. Inténtalo de nuevo.");
       return false;
@@ -922,6 +926,7 @@
     document.getElementById("loginOverlay").hidden = true;
     document.getElementById("loginError").hidden = true;
     document.getElementById("loginForm").reset();
+    resetCaptcha("loginCaptcha");
   }
 
   async function loginSubmit(evt){
