@@ -529,37 +529,42 @@
       <form id="contactForm" onsubmit="return submitFlow(event)">
         <div class="field">
           <label for="fName">Nombre*</label>
-          <input type="text" id="fName" required>
+          <input type="text" id="fName" required maxlength="100">
         </div>
         <div class="field">
           <label for="fBusinessName">Nombre del negocio*</label>
-          <input type="text" id="fBusinessName" required>
+          <input type="text" id="fBusinessName" required maxlength="150">
         </div>
         <div class="field">
           <label for="fEmail">Email*</label>
-          <input type="email" id="fEmail" required>
+          <input type="email" id="fEmail" required maxlength="254">
         </div>
         <div class="field" id="passwordField">
           <label for="fPassword">Crea una contraseña*</label>
-          <input type="password" id="fPassword" minlength="6" autocomplete="new-password">
+          <input type="password" id="fPassword" minlength="6" maxlength="72" autocomplete="new-password">
           <p class="field-hint">Mínimo 6 caracteres. La usarás para entrar más adelante a tu panel.</p>
         </div>
         <div class="field">
           <label for="fPhone">Teléfono (opcional)</label>
-          <input type="tel" id="fPhone">
+          <input type="tel" id="fPhone" maxlength="20">
         </div>
         <div class="field" id="fallbackCommentField" hidden>
           <label for="fComment">Cuéntanos a qué se dedica tu negocio y qué te gustaría automatizar*</label>
-          <textarea id="fComment"></textarea>
+          <textarea id="fComment" maxlength="2000"></textarea>
         </div>
         <div class="field" id="normalCommentField">
           <label for="fComment2">Algo más que quieras comentarnos (opcional)</label>
-          <textarea id="fComment2"></textarea>
+          <textarea id="fComment2" maxlength="2000"></textarea>
         </div>
         <div class="check-row">
           <input type="checkbox" id="fPrivacy" required>
           <label for="fPrivacy">He leído y acepto la <a href="privacidad.html" target="_blank" rel="noopener" style="color:var(--accent);">política de privacidad</a> y las <a href="condiciones.html" target="_blank" rel="noopener" style="color:var(--accent);">condiciones del servicio</a>*</label>
         </div>
+        <div style="position:absolute;left:-9999px;" aria-hidden="true">
+          <label for="fWebsite">Web</label>
+          <input type="text" id="fWebsite" name="website" tabindex="-1" autocomplete="off">
+        </div>
+        <div id="contactCaptcha" style="margin:10px 0;"></div>
         <p class="field-hint" id="contactError" style="color:#B3401F;" hidden></p>
         <div class="flow-actions">
           <button type="button" class="btn btn-ghost" id="contactBackBtn" onclick="goStep('stepServices')">Atrás</button>
@@ -593,12 +598,13 @@
     <form id="loginForm" onsubmit="return loginSubmit(event)">
       <div class="field">
         <label for="lEmail">Email</label>
-        <input type="email" id="lEmail" required>
+        <input type="email" id="lEmail" required maxlength="254">
       </div>
       <div class="field">
         <label for="lPassword">Contraseña</label>
-        <input type="password" id="lPassword" required>
+        <input type="password" id="lPassword" required maxlength="72">
       </div>
+      <div id="loginCaptcha" style="margin:10px 0;"></div>
       <p class="field-hint" id="loginError" style="color:#B3401F;" hidden></p>
       <div class="flow-actions">
         <button type="submit" class="btn btn-primary btn-block" id="loginBtn">Entrar</button>
@@ -619,8 +625,27 @@
   </div>
 </div>
 
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
+  // ---- Captcha (Cloudflare Turnstile; la site key es pública) ----
+  var TURNSTILE_SITE_KEY = "0x4AAAAAAE-IygGGGTYedfvV";
+  var captchaWidgets = {};
+
+  function showCaptcha(containerId){
+    if(!window.turnstile) return;
+    if(captchaWidgets[containerId] === undefined){
+      captchaWidgets[containerId] = window.turnstile.render("#" + containerId, { sitekey: TURNSTILE_SITE_KEY });
+    }
+  }
+  function captchaToken(containerId){
+    if(!window.turnstile || captchaWidgets[containerId] === undefined) return "";
+    return window.turnstile.getResponse(captchaWidgets[containerId]) || "";
+  }
+  function resetCaptcha(containerId){
+    if(window.turnstile && captchaWidgets[containerId] !== undefined) window.turnstile.reset(captchaWidgets[containerId]);
+  }
+
   // ---- Supabase connection (clave pública, segura de exponer aquí) ----
   var SUPABASE_URL = "https://ookbxfjqvbbqmjaoimkp.supabase.co";
   var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9va2J4ZmpxdmJicW1qYW9pbWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3NDQxMzcsImV4cCI6MjEwNTMyMDEzN30.Cq4oJ83K2-vHT8gJ-qPW50OzUZxXaa_kjpaMLsZWKMQ";
@@ -721,6 +746,7 @@
       document.getElementById("submitBtn").textContent = "Crear cuenta";
       document.getElementById("contactBackBtn").onclick = function(){ goStep("stepServices"); };
     }
+    if(id === "stepContact") showCaptcha("contactCaptcha");
   }
 
   function openFlow(){
@@ -753,6 +779,17 @@
     var email = document.getElementById("fEmail").value.trim();
     var phone = document.getElementById("fPhone").value.trim();
     var submitBtn = document.getElementById("submitBtn");
+
+    // Honeypot: un bot rellena este campo oculto; fingimos éxito y no enviamos nada.
+    if(document.getElementById("fWebsite").value){
+      goStep("stepDone");
+      return false;
+    }
+    var captcha = captchaToken("contactCaptcha");
+    if(!captcha){
+      showContactError("Por favor, completa la verificación de seguridad.");
+      return false;
+    }
 
     var services = [];
     if(!state.fallback){
@@ -787,8 +824,9 @@
     var password = document.getElementById("fPassword").value;
     var comment2 = document.getElementById("fComment2").value.trim();
 
-    var signUpRes = await db.auth.signUp({ email: email, password: password });
+    var signUpRes = await db.auth.signUp({ email: email, password: password, options: { captchaToken: captcha } });
     if(signUpRes.error){
+      resetCaptcha("contactCaptcha");
       submitBtn.disabled = false;
       showContactError(signUpRes.error.message);
       return false;
@@ -856,7 +894,10 @@
   }
 
   // ================= Login =================
-  function openLogin(){ document.getElementById("loginOverlay").hidden = false; }
+  function openLogin(){
+    document.getElementById("loginOverlay").hidden = false;
+    showCaptcha("loginCaptcha");
+  }
   function closeLogin(){
     document.getElementById("loginOverlay").hidden = true;
     document.getElementById("loginError").hidden = true;
@@ -868,14 +909,22 @@
     var errEl = document.getElementById("loginError");
     errEl.hidden = true;
     var btn = document.getElementById("loginBtn");
+
+    var captcha = captchaToken("loginCaptcha");
+    if(!captcha){
+      errEl.textContent = "Por favor, completa la verificación de seguridad.";
+      errEl.hidden = false;
+      return false;
+    }
     btn.disabled = true;
 
     var email = document.getElementById("lEmail").value.trim();
     var password = document.getElementById("lPassword").value;
 
-    var res = await db.auth.signInWithPassword({ email: email, password: password });
+    var res = await db.auth.signInWithPassword({ email: email, password: password, options: { captchaToken: captcha } });
     btn.disabled = false;
     if(res.error){
+      resetCaptcha("loginCaptcha");
       errEl.textContent = "No hemos podido iniciar sesión: " + res.error.message;
       errEl.hidden = false;
       return false;
