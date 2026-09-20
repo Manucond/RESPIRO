@@ -632,6 +632,13 @@
   var TURNSTILE_SITE_KEY = "0x4AAAAAAE-IygGGGTYedfvV";
   var captchaWidgets = {};
 
+  // Escapa texto de usuario antes de meterlo en innerHTML (evita inyección de HTML/JS).
+  function esc(v){
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
   function showCaptcha(containerId){
     if(!window.turnstile) return;
     if(captchaWidgets[containerId] === undefined){
@@ -715,7 +722,7 @@
     BUSINESS_TYPES[key].services.forEach(function(service){
       var row = document.createElement("div");
       row.className = "check-row";
-      row.innerHTML = '<span style="color:var(--accent);font-weight:700;">✓</span><label>' + service + '</label>';
+      row.innerHTML = '<span style="color:var(--accent);font-weight:700;">✓</span><label>' + esc(service) + '</label>';
       list.appendChild(row);
     });
   }
@@ -1041,9 +1048,9 @@
 
     var html = '';
     html += '<div class="admin-business-block">';
-    html += '<div class="dash-name" style="font-size:1.15rem;">' + biz.business_name + '</div>';
-    html += '<div class="dash-meta">' + (typeInfo ? typeInfo.label : "") + ' · ' + biz.email + '</div>';
-    html += '<div style="margin-top:14px;"><span class="badge ' + (badgeClass[biz.subscription_status] || "badge-cancelled") + '">' + (subLabels[biz.subscription_status] || biz.subscription_status) + '</span></div>';
+    html += '<div class="dash-name" style="font-size:1.15rem;">' + esc(biz.business_name) + '</div>';
+    html += '<div class="dash-meta">' + esc(typeInfo ? typeInfo.label : "") + ' · ' + esc(biz.email) + '</div>';
+    html += '<div style="margin-top:14px;"><span class="badge ' + (badgeClass[biz.subscription_status] || "badge-cancelled") + '">' + esc(subLabels[biz.subscription_status] || biz.subscription_status) + '</span></div>';
     if(totalHours){
       html += '<div class="free-block" style="margin-top:18px;"><span>Ahorras aprox. cada mes</span><span>' + totalHours + ' horas</span></div>';
     }
@@ -1112,14 +1119,14 @@
     businesses.forEach(function(b){
       var svcs = services.filter(function(s){ return s.business_id === b.id; });
       var typeInfo = BUSINESS_TYPES[b.business_type_key];
-      html += '<div class="admin-business-block"><div class="dash-name">' + b.business_name + '</div>' +
-        '<div class="dash-meta">' + (typeInfo ? typeInfo.label : b.business_type_key) + ' · ' + b.contact_name + ' · ' + b.email + (b.phone ? ' · ' + b.phone : '') + '</div><div style="margin-top:8px;">';
+      html += '<div class="admin-business-block"><div class="dash-name">' + esc(b.business_name) + '</div>' +
+        '<div class="dash-meta">' + esc(typeInfo ? typeInfo.label : b.business_type_key) + ' · ' + esc(b.contact_name) + ' · ' + esc(b.email) + (b.phone ? ' · ' + esc(b.phone) : '') + '</div><div style="margin-top:8px;">';
       if(!svcs.length){
         html += '<span class="dash-meta">Sin servicios contratados</span>';
       } else {
         svcs.forEach(function(s){
           var healthDot = s.status === "active" ? (s.health_status === "ok" ? "🟢" : s.health_status === "warning" ? "🟡" : "🔴") : "";
-          html += '<span class="svc-tag">' + healthDot + ' ' + s.service_name + (s.status === "cancelled" ? " (cancelado)" : "") + '</span>';
+          html += '<span class="svc-tag">' + healthDot + ' ' + esc(s.service_name) + (s.status === "cancelled" ? " (cancelado)" : "") + '</span>';
         });
       }
       html += '</div></div>';
@@ -1129,13 +1136,13 @@
 
     html += '<div class="dash-section"><h3>Solicitudes de contacto (' + leads.length + ')</h3>';
     leads.forEach(function(l){
-      html += '<div class="dash-row" style="align-items:flex-start;"><div><div class="dash-name">' + l.name + ' — ' + l.business_name + '</div>' +
-        '<div class="dash-meta">' + l.email + (l.phone ? ' · ' + l.phone : '') + '</div>' +
-        (l.comment ? '<div class="dash-meta" style="margin-top:6px;">' + l.comment + '</div>' : '') + '</div>' +
+      html += '<div class="dash-row" style="align-items:flex-start;"><div><div class="dash-name">' + esc(l.name) + ' — ' + esc(l.business_name) + '</div>' +
+        '<div class="dash-meta">' + esc(l.email) + (l.phone ? ' · ' + esc(l.phone) : '') + '</div>' +
+        (l.comment ? '<div class="dash-meta" style="margin-top:6px;">' + esc(l.comment) + '</div>' : '') + '</div>' +
         '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">' +
-        '<span class="badge badge-' + l.status + '">' + l.status + '</span>' +
-        (l.status !== "contacted" ? '<button class="btn btn-ghost btn-sm" onclick="setLeadStatus(' + l.id + ',\'contacted\')">Marcar contactada</button>' : '') +
-        (l.status !== "closed" ? '<button class="btn btn-ghost btn-sm" onclick="setLeadStatus(' + l.id + ',\'closed\')">Cerrar</button>' : '') +
+        '<span class="badge badge-' + esc(l.status) + '">' + esc(l.status) + '</span>' +
+        (l.status !== "contacted" ? '<button class="btn btn-ghost btn-sm" onclick="setLeadStatus(' + Number(l.id) + ',\'contacted\')">Marcar contactada</button>' : '') +
+        (l.status !== "closed" ? '<button class="btn btn-ghost btn-sm" onclick="setLeadStatus(' + Number(l.id) + ',\'closed\')">Cerrar</button>' : '') +
         '</div></div>';
     });
     if(!leads.length){ html += '<p class="dash-sub">No hay solicitudes pendientes.</p>'; }
