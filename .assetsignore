@@ -1,1 +1,4 @@
-.git .wrangler supabase wrangler.jsonc
+.git
+.wrangler
+supabase
+wrangler.jsonc
