@@ -2,3 +2,4 @@
 .wrangler
 supabase
 wrangler.jsonc
+worker.js
