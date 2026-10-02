@@ -166,6 +166,12 @@
   @keyframes rise{ to{ opacity:1; transform:none; } }
   @media (prefers-reduced-motion: reduce){ .free-block{ animation: none; opacity:1; transform:none; } }
 
+  /* ---------- Demo video ---------- */
+  .demo-video{
+    display:block; width:100%; aspect-ratio:16/9; background:#0b1430;
+    border:1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+
   /* ---------- Value section ---------- */
   .section{ padding: 64px 0; border-top: 1px solid var(--border); }
   .section-head{ max-width: 56ch; margin-bottom: 40px; }
@@ -348,7 +354,7 @@
         </p>
         <div class="hero-ctas">
           <button class="btn btn-primary" onclick="openFlow()">Regístrate</button>
-          <a class="link-quiet" href="#como-funciona">Ver cómo funciona</a>
+          <a class="link-quiet" href="#demo">Ver cómo funciona (vídeo de 46 s)</a>
         </div>
       </div>
 
@@ -375,6 +381,19 @@
         </div>
       </div>
 
+    </div>
+  </section>
+
+  <!-- ---------- Demo en vídeo ---------- -->
+  <section class="section" id="demo">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Así es una reserva que se hace sola</h2>
+        <p>Un cliente escribe pidiendo mesa. Se comprueba la disponibilidad, se crea la reserva y se le confirma, sin que tú toques el móvil.</p>
+      </div>
+      <video class="demo-video" src="assets/respiro-demo.mp4" poster="assets/respiro-demo-poster.jpg"
+             width="1280" height="720" controls muted playsinline preload="none"
+             aria-label="Animación: un cliente pide mesa por mensaje y la reserva se gestiona automáticamente"></video>
     </div>
   </section>
 
@@ -1181,5 +1200,22 @@
   })();
 </script>
 
+<script>
+  // Reproduce la demo en silencio cuando entra en pantalla (salvo si el usuario prefiere menos movimiento)
+  (function(){
+    var v = document.querySelector('.demo-video');
+    if(!v || !('IntersectionObserver' in window)) return;
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var touched = false;
+    v.addEventListener('pause', function(){ if(!v.ended && v.dataset.auto !== '1') touched = true; v.dataset.auto = ''; });
+    new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(touched) return;
+        if(e.isIntersecting){ v.play().catch(function(){}); }
+        else if(!v.paused){ v.dataset.auto = '1'; v.pause(); }
+      });
+    }, { threshold: 0.5 }).observe(v);
+  })();
+</script>
 </body>
 </html>
