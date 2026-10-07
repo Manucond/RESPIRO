@@ -42,6 +42,10 @@ Mini App (www.respiroai.es/app) ──► Worker /api/*
    └─ agenda / huecos / nueva cita → n8n «Mini App API» (petición firmada HMAC + ts + nonce)
 ```
 
+**Modo RESPIRO** (solo admins, en el bot): sin cliente elegido, lo que escribís es una pregunta sobre datos.
+Claude Sonnet 5.5 la convierte en una consulta SQL que se ejecuta con el rol `respiro_consultas` (solo SELECT sobre
+las vistas de `respiro_admin`, sin datos de pacientes) y redacta la respuesta. `/gasto`, `/clientes`, `/cliente X`, `/respiro`.
+
 Flujos de n8n (todos generados por `n8n/build.py`):
 
 - **RESPIRO · Bot Telegram**: el bot.
@@ -69,10 +73,10 @@ Reglas que no se rompen:
 | Comando | Qué prueba |
 |---|---|
 | `python3 tests/n8n/entorno.py arrancar` | Monta Postgres 17 + simulador (Telegram, Calendar, Claude, Mistral) + n8n 2.39.10 en Docker |
-| `python3 tests/n8n/e2e.py` | Bot de extremo a extremo (79 comprobaciones) |
+| `python3 tests/n8n/e2e.py` | Bot de extremo a extremo, modo RESPIRO incluido (88 comprobaciones) |
 | `npm run test:worker` | Worker + Mini App (chat y voz incluidos) + n8n local, con dos clientes (25 pruebas) |
-| `python3 tests/ia/preparar.py` y `tests/ia/real.js` | Comprensión con la **API real** de Claude (cuesta céntimos) |
-| `tests/sql/10_pruebas.sql`, `20_panel_web.sql` | RLS, funciones de la base y panel web (42 + 17 comprobaciones) |
+| `tests/ia/real.js`, `tests/ia/admin_real.js` | Comprensión con la **API real** de Claude y modo RESPIRO contra la base real (cuestan céntimos) |
+| `tests/sql/10_pruebas.sql`, `20_panel_web.sql`, `30_admin_consultas.sql` | RLS, panel web y seguridad del modo RESPIRO (42 + 17 + 19) |
 | `tests/miniapp/vista.html` | Ver la Mini App en el navegador con datos de ejemplo |
 
 ## Secretos

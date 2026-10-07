@@ -10,3 +10,4 @@ node_modules/
 tests/n8n/.tmp/
 tests/ia/.codigo.json
 __pycache__/
+tests/ia/.codigo_admin.json

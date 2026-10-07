@@ -17,6 +17,7 @@ SRC = RAIZ / 'src'
 SRC_T = RAIZ / 'src_transcripcion'
 SRC_M = RAIZ / 'src_miniapp'
 SRC_S = RAIZ / 'src_semanal'
+SRC_A = RAIZ / 'src_admin'
 SALIDA = RAIZ / 'flujos'
 
 CRED_PG = {'postgres': {'id': '__CRED_PG__', 'name': 'RESPIRO Supabase'}}
@@ -159,7 +160,7 @@ def flujo_bot():
     f.pg('Auth', 'select respiro.auth_chat($1::bigint) as cfg, $2::jsonb as m',
          '={{ [ $json.m.chat_id, JSON.stringify($json.m) ] }}', (X(6), Y(0)))
     f.code('Ruta', 'ruta.js', (X(7), Y(0)))
-    f.switch('Ruta · ¿Qué es?', '$json.ruta', ['start', 'comando', 'callback', 'voz', 'texto'], (X(8), Y(0)))
+    f.switch('Ruta · ¿Qué es?', '$json.ruta', ['start', 'comando', 'callback', 'voz', 'texto', 'admin'], (X(8), Y(0)))
     for a, b in [('Telegram · Entrada', 'Responder 200'), ('Responder 200', 'G'), ('Mini App · Chat', 'G'),
                  ('G', '¿Desde la Mini App?'), ('Firma chat', 'Norm'), ('Norm', '¿Entrada válida?'),
                  ('Dedupe', '¿Nuevo?'), ('Auth', 'Ruta'), ('Ruta', 'Ruta · ¿Qué es?')]:
@@ -191,7 +192,11 @@ def flujo_bot():
             {'conditions': {'options': {'caseSensitive': True, 'leftValue': '', 'typeValidation': 'loose', 'version': 2},
                             'conditions': [{'id': _id('cmd/agenda', 'bot'), 'leftValue': "={{ $json.siguiente === 'consulta' }}", 'rightValue': '',
                                             'operator': {'type': 'boolean', 'operation': 'true', 'singleValue': True}}],
-                            'combinator': 'and'}, 'renameOutput': True, 'outputKey': 'agenda'}]},
+                            'combinator': 'and'}, 'renameOutput': True, 'outputKey': 'agenda'},
+            {'conditions': {'options': {'caseSensitive': True, 'leftValue': '', 'typeValidation': 'loose', 'version': 2},
+                            'conditions': [{'id': _id('cmd/admin', 'bot'), 'leftValue': "={{ $json.siguiente === 'admin' }}", 'rightValue': '',
+                                            'operator': {'type': 'boolean', 'operation': 'true', 'singleValue': True}}],
+                            'combinator': 'and'}, 'renameOutput': True, 'outputKey': 'admin'}]},
         'options': {'fallbackOutput': 'extra', 'renameFallbackOutput': 'responder'}}, (X(10), Y(-1)))
     f.pg('Comando · SQL', '={{ $json.sql.q }}', '={{ $json.sql.p }}', (X(11), Y(-1)))
     f.code('Comando · Respuesta', 'comando_resp.js', (X(12), Y(-1)))
@@ -236,7 +241,7 @@ def flujo_bot():
 
     # respuestas fijas
     f.code('Respuestas fijas', 'fijas.js', (X(9), Y(3)))
-    f.unir('Ruta · ¿Qué es?', 'Respuestas fijas', 5)
+    f.unir('Ruta · ¿Qué es?', 'Respuestas fijas', 6)
 
     # agenda común
     f.code('Pedir agenda', 'pedir_agenda.js', (X(16), Y(0)))
@@ -318,11 +323,56 @@ def flujo_bot():
     f.code('Consulta', 'consulta.js', (X(21), Y(2)))
     f.unir('Siguiente', 'Consulta', 3)
 
+    # Modo RESPIRO (solo admins sin cliente elegido): pregunta → SQL de solo lectura → respuesta
+    f.pg('Admin · Historial', 'select respiro.admin_historial_de($1::bigint) as historial, $2::jsonb as x',
+         '={{ [ $json.m.chat_id, JSON.stringify({ m: $json.m, cfg: $json.cfg }) ] }}', (X(9), Y(4)))
+    f.nodo('Admin · Contexto', 'n8n-nodes-base.code', 2, {'jsCode': 'const j = $input.first().json;\nreturn [{ json: { ...j.x, historial: j.historial || [] } }];'}, (X(10), Y(4)))
+    f.code('Admin · Preparar', 'admin_preparar.js', (X(11), Y(4)), carpeta=SRC_A)
+    f.http('🔑 Admin · Claude SQL', {
+        'method': 'POST', 'url': f"={{{{ {G_EXPR}.anthropic_base }}}}/v1/messages",
+        'authentication': 'genericCredentialType', 'genericAuthType': 'httpHeaderAuth',
+        'sendHeaders': True, 'headerParameters': {'parameters': [{'name': 'anthropic-version', 'value': '2023-06-01'}]},
+        'sendBody': True, 'specifyBody': 'json', 'jsonBody': '={{ JSON.stringify($json.admin_body) }}',
+        'options': {'timeout': 60000}}, (X(12), Y(4)), cred=CRED_ANTHROPIC)
+    f.code('Admin · Validar', 'admin_validar.js', (X(13), Y(4)), carpeta=SRC_A)
+    f.si('¿Consultar datos?', '={{ !!$json.sql }}', (X(14), Y(4)))
+    f.pg('Admin · Consultar', 'select respiro_admin.consultar($1) as filas', '={{ [ $json.sql ] }}', (X(15), Y(3.5)),
+         onError='continueRegularOutput')
+    f.code('Admin · Tras SQL', 'admin_tras_sql.js', (X(16), Y(3.5)), carpeta=SRC_A)
+    f.si('¿Reintentar consulta?', '={{ $json.reintentar === true }}', (X(17), Y(3.5)))
+    f.code('Admin · Redactar', 'admin_redactar.js', (X(18), Y(4)), carpeta=SRC_A)
+    f.si('¿Redactar con IA?', '={{ !!$json.redactar_body }}', (X(19), Y(4)))
+    f.http('🔑 Admin · Claude respuesta', {
+        'method': 'POST', 'url': f"={{{{ {G_EXPR}.anthropic_base }}}}/v1/messages",
+        'authentication': 'genericCredentialType', 'genericAuthType': 'httpHeaderAuth',
+        'sendHeaders': True, 'headerParameters': {'parameters': [{'name': 'anthropic-version', 'value': '2023-06-01'}]},
+        'sendBody': True, 'specifyBody': 'json', 'jsonBody': '={{ JSON.stringify($json.redactar_body) }}',
+        'options': {'timeout': 60000}}, (X(20), Y(3.5)), cred=CRED_ANTHROPIC)
+    f.code('Admin · Respuesta', 'admin_respuesta.js', (X(21), Y(4)), carpeta=SRC_A)
+    f.pg('Admin · Recordar', 'select respiro.admin_recordar($1::bigint, $2, $3) as n, $4::jsonb as salida',
+         '={{ [ $json.recordar.chat_id, $json.recordar.pregunta, $json.recordar.sql, JSON.stringify($json.salida) ] }}', (X(22), Y(4)))
+    f.unir('Ruta · ¿Qué es?', 'Admin · Historial', 5)
+    f.unir('Comando · ¿Qué hace?', 'Admin · Historial', 2)
+    for a, b in [('Admin · Historial', 'Admin · Contexto'), ('Admin · Contexto', 'Admin · Preparar'),
+                 ('Admin · Preparar', '🔑 Admin · Claude SQL'), ('🔑 Admin · Claude SQL', 'Admin · Validar'),
+                 ('Admin · Validar', '¿Consultar datos?'), ('Admin · Consultar', 'Admin · Tras SQL'),
+                 ('Admin · Tras SQL', '¿Reintentar consulta?'), ('Admin · Redactar', '¿Redactar con IA?'),
+                 ('🔑 Admin · Claude respuesta', 'Admin · Respuesta'), ('Admin · Respuesta', 'Admin · Recordar'),
+                 ('Admin · Recordar', 'Log y salida')]:
+        f.unir(a, b)
+    f.unir('¿Consultar datos?', 'Admin · Consultar', 0)
+    f.unir('¿Consultar datos?', 'Admin · Redactar', 1)
+    f.unir('¿Reintentar consulta?', 'Admin · Preparar', 0)
+    f.unir('¿Reintentar consulta?', 'Admin · Redactar', 1)
+    f.unir('¿Redactar con IA?', '🔑 Admin · Claude respuesta', 0)
+    f.unir('¿Redactar con IA?', 'Admin · Respuesta', 1)
+
     # Salida común: log (sin datos personales) + consumo de IA + mensajes
     f.pg('Log y salida',
          "select respiro.log_eventos($1::jsonb) as n,\n"
          "  case when jsonb_typeof($3::jsonb) = 'object' then respiro.registrar_consumo_ia(($3::jsonb->>'cliente_id')::uuid, $3::jsonb->>'modelo',\n"
-         "    ($3::jsonb->>'entrada')::int, ($3::jsonb->>'salida')::int, ($3::jsonb->>'cache_lect')::int, ($3::jsonb->>'cache_escr')::int) end as coste,\n"
+         "    ($3::jsonb->>'entrada')::int, ($3::jsonb->>'salida')::int, ($3::jsonb->>'cache_lect')::int, ($3::jsonb->>'cache_escr')::int,\n"
+         "    coalesce($3::jsonb->>'uso', 'acciones')) end as coste,\n"
          "  $2::jsonb as tg, $4::text as admin_txt,\n"
          "  case when length($4::text) > 0 then respiro.admins() else '[]'::jsonb end as admins",
          '={{ [ JSON.stringify($json.salida.logs || []), JSON.stringify($json.salida.tg || []), '
@@ -335,7 +385,7 @@ def flujo_bot():
     f.http('TG · API', TG_API, (X(32), Y(0)))
     for origen, salida in [('Bienvenida', 0), ('Respuestas fijas', 0), ('Comando · Respuesta', 0), ('Resumen', 0),
                            ('Ejecutar · Resultado', 0), ('Consulta', 0), ('Callback · ¿Válido?', 1), ('¿Transcribir?', 1),
-                           ('¿Audio entendido?', 1), ('¿Leer agenda?', 1), ('Siguiente', 4), ('Comando · ¿Qué hace?', 2)]:
+                           ('¿Audio entendido?', 1), ('¿Leer agenda?', 1), ('Siguiente', 4), ('Comando · ¿Qué hace?', 3)]:
         f.unir(origen, 'Log y salida', salida)
     f.unir('Log y salida', 'Salida')
     f.unir('Salida', '¿Respuesta a la Mini App?')

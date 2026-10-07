@@ -173,6 +173,12 @@ def telegram():
     ]
     tg('setMyCommands', {'commands': [{'command': c, 'description': d} for c, d in comandos], 'language_code': 'es'})
     tg('setMyCommands', {'commands': [{'command': c, 'description': d} for c, d in comandos]})
+    # Menú propio para los admins de RESPIRO (solo en sus chats)
+    admin_cmds = [('respiro', 'Modo RESPIRO: pregunta datos'), ('gasto', 'Gasto de IA del mes'), ('clientes', 'Lista de clientes'),
+                  ('cliente', 'Gestionar la agenda de un cliente'), ('invitar', 'Invitar: /invitar cliente rol'), ('ayuda', 'Ayuda')]
+    for chat in [x for x in v.get('ADMIN_CHATS', '').split(',') if x.strip()]:
+        tg('setMyCommands', {'commands': [{'command': c, 'description': d} for c, d in admin_cmds],
+                             'scope': {'type': 'chat', 'chat_id': int(chat)}})
     tg('setChatMenuButton', {'menu_button': {'type': 'web_app', 'text': 'Mi agenda', 'web_app': {'url': MINIAPP_URL}}})
     tg('setMyShortDescription', {'short_description': 'Tu asistente de agenda de RESPIRO: apunta, mueve y cancela citas hablando.'})
     tg('setMyDescription', {'description': (

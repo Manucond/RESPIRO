@@ -52,9 +52,12 @@ switch (luego) {
     tg.push(tgTexto(m.chat_id, '🏢 <b>Clientes</b>\n' + (l.length ? l.map((c) => `• ${esc(c.nombre)} · ${c.usuarios} usuarios${c.calendario ? '' : ' · ⚠️ sin calendario'}`).join('\n') : 'Ninguno.') + '\n\nCambia con /cliente &lt;nombre&gt;'));
     break;
   }
+  case 'respiro':
+    tg.push(tgTexto(m.chat_id, '🛠 <b>Modo RESPIRO</b>. Pregúntame lo que quieras sobre clientes, uso o gastos. Por ejemplo: «¿cuánto ha gastado cada cliente este mes?» o «¿qué automatizaciones han fallado esta semana?».'));
+    break;
   case 'cliente': {
     const v = r.r || {};
-    tg.push(tgTexto(m.chat_id, v.ok ? `🛠 Ahora estás viendo <b>${esc(v.cliente)}</b>.` : '⚠️ ' + ({ no_existe: 'No encuentro ese cliente.', ambiguo: 'Hay varios clientes con ese nombre.', no_admin: 'Solo para admins.' }[v.motivo] || 'No he podido cambiar.')));
+    tg.push(tgTexto(m.chat_id, v.ok ? `🛠 Ahora estás viendo <b>${esc(v.cliente)}</b>. Para volver al modo RESPIRO: /respiro` : '⚠️ ' + ({ no_existe: 'No encuentro ese cliente.', ambiguo: 'Hay varios clientes con ese nombre.', no_admin: 'Solo para admins.' }[v.motivo] || 'No he podido cambiar.')));
     break;
   }
 }

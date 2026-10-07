@@ -402,7 +402,7 @@ def pruebas():
     r = enviar(msg(PERSONAL_A, '/invitar'))
     comprobar('Personal no puede invitar', 'Solo el dueño' in texto_de(r), texto_de(r))
     r = enviar(msg(ADMIN, '/hoy'))
-    comprobar('Admin sin cliente elegido no ve agendas', 'Primero elige cliente' in texto_de(r), texto_de(r))
+    comprobar('Admin sin cliente elegido no ve agendas', 'modo RESPIRO' in texto_de(r), texto_de(r))
     r = enviar(msg(ADMIN, '/clientes'))
     comprobar('Admin lista clientes', 'Clínica A' in texto_de(r) and 'Clínica B' in texto_de(r), texto_de(r))
     r = enviar(msg(ADMIN, '/cliente'))
@@ -414,6 +414,45 @@ def pruebas():
     comprobar('Admin: /invitar <cliente> <rol>', 'Clínica A' in texto_de(r) and 'start=' in texto_de(r), texto_de(r))
     r = enviar(msg(DUENO_A, '/cliente Clínica B'))
     comprobar('Un dueño no puede cambiar de cliente', 'solo para RESPIRO' in texto_de(r), texto_de(r))
+
+    # Modo RESPIRO: el admin pregunta datos en lenguaje natural
+    r = enviar(msg(ADMIN, '/respiro'))
+    comprobar('/respiro vuelve al modo RESPIRO', 'Modo RESPIRO' in texto_de(r), texto_de(r))
+    n_ia = len(llamadas('anthropic'))
+    ia(raw=json.dumps({'sql': "select cliente, round(sum(coste_usd), 4) as usd from consumo_ia group by 1 order by 1", 'respuesta': None}))
+    ia(raw='Este mes llevamos:\n• Clínica A: 0,0200 $\n• Total: 0,0200 $')
+    r = enviar(msg(ADMIN, 'cuánto llevamos gastado este mes?'))
+    t = texto_de(r)
+    pets = [c['json'] for c in llamadas('anthropic')[n_ia:]]
+    comprobar('Modo RESPIRO: responde con los datos y la consulta plegada', 'Clínica A' in t and '<blockquote expandable>' in t, t)
+    comprobar('Modo RESPIRO: usa Claude Sonnet 5.5 y le pasa los resultados reales',
+              len(pets) == 2 and pets[0]['model'] == 'claude-sonnet-5-5' and 'Clínica A' in pets[1]['messages'][0]['content'],
+              json.dumps(pets, ensure_ascii=False)[:500])
+    comprobar('Modo RESPIRO: su gasto queda apuntado como "admin"',
+              sql("select count(*) from respiro.consumo_ia where uso = 'admin' and cliente_id is null") != '0')
+    n_ia = len(llamadas('anthropic'))
+    ia(raw=json.dumps({'sql': 'select * from tabla_que_no_existe', 'respuesta': None}))
+    ia(raw=json.dumps({'sql': 'select count(*) as clientes from clientes', 'respuesta': None}))
+    ia(raw='Tenéis 2 clientes.')
+    r = enviar(msg(ADMIN, 'y cuántos clientes tenemos'))
+    pets = [c['json'] for c in llamadas('anthropic')[n_ia:]]
+    comprobar('Modo RESPIRO: si la consulta falla, se corrige sola con el error',
+              '2 clientes' in texto_de(r) and len(pets) == 3 and 'tabla_que_no_existe' in pets[1]['messages'][0]['content'],
+              texto_de(r))
+    comprobar('Modo RESPIRO: recuerda la pregunta anterior', 'cuánto llevamos gastado' in pets[0]['messages'][0]['content'],
+              pets[0]['messages'][0]['content'][:300])
+    n_ia = len(llamadas('anthropic'))
+    ia(raw=json.dumps({'sql': None, 'respuesta': 'Puedo consultar clientes, uso, gastos, errores e invitaciones.'}))
+    r = enviar(msg(ADMIN, 'hola'))
+    comprobar('Modo RESPIRO: sin datos que buscar contesta directamente (una sola llamada)',
+              'Puedo consultar' in texto_de(r) and len(llamadas('anthropic')) - n_ia == 1, texto_de(r))
+    ia(raw=json.dumps({'sql': "select round(sum(coste_usd), 4) as total from consumo_ia", 'respuesta': None}))
+    ia(raw='Total del mes: 0,0300 $')
+    r = enviar(msg(ADMIN, '/gasto'))
+    comprobar('/gasto pregunta el gasto del mes', 'Total del mes' in texto_de(r), texto_de(r))
+    r = enviar(msg(DUENO_A, '/gasto'))
+    comprobar('/gasto es solo para admins', 'solo para RESPIRO' in texto_de(r), texto_de(r))
+    r = enviar(msg(ADMIN, '/cliente Clínica B'))
 
     # Informe
     r = enviar(msg(DUENO_A, '/informe'))
