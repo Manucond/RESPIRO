@@ -31,7 +31,12 @@ Telegram ──► n8n «RESPIRO · Bot Telegram»
                     Plan comprueba huecos, horario, nombres repetidos y móvil
                     → un resumen con Sí / No → Google Calendar (fuente de verdad)
 
+Web (Mi panel) ──► Supabase public.panel_* (sesión de la web)
+   cliente: «Conectar mi Telegram» → su invitación de dueño (enlace o QR)
+   admin:   «Activar asistente» → enlaza el negocio con su calendario
+
 Mini App (www.respiroai.es/app) ──► Worker /api/*
+   ├─ Chat (pantalla principal): texto → /api/chat; audio → /api/voz (Mistral) → mismo flujo del bot
    verifica initData (HMAC con el token del bot) → cliente desde la identidad verificada
    ├─ lecturas de informes → Supabase public.miniapp_* (RLS por cliente)
    └─ agenda / huecos / nueva cita → n8n «Mini App API» (petición firmada HMAC + ts + nonce)
@@ -65,9 +70,9 @@ Reglas que no se rompen:
 |---|---|
 | `python3 tests/n8n/entorno.py arrancar` | Monta Postgres 17 + simulador (Telegram, Calendar, Claude, Mistral) + n8n 2.39.10 en Docker |
 | `python3 tests/n8n/e2e.py` | Bot de extremo a extremo (79 comprobaciones) |
-| `npm run test:worker` | Worker + Mini App + n8n local, con dos clientes (17 pruebas) |
+| `npm run test:worker` | Worker + Mini App (chat y voz incluidos) + n8n local, con dos clientes (25 pruebas) |
 | `python3 tests/ia/preparar.py` y `tests/ia/real.js` | Comprensión con la **API real** de Claude (cuesta céntimos) |
-| `tests/sql/10_pruebas.sql` | RLS y funciones de la base (42 comprobaciones) |
+| `tests/sql/10_pruebas.sql`, `20_panel_web.sql` | RLS, funciones de la base y panel web (42 + 17 comprobaciones) |
 | `tests/miniapp/vista.html` | Ver la Mini App en el navegador con datos de ejemplo |
 
 ## Secretos
@@ -78,7 +83,7 @@ Todos en `.dev.vars` (ignorado por git y por `.assetsignore`), nunca en el repo:
 - `SUPABASE_SERVICE_ROLE_KEY` (clave secreta de Supabase)
 - Generados por `n8n/deploy.py secretos`: `TG_WEBHOOK_SECRETO`, `TG_RUTA`, `MINIAPP_SECRETO`, `N8N_PG_PASSWORD`
 
-En Cloudflare (`wrangler secret put … --name respiro`): `TELEGRAM_BOT_TOKEN`, `SUPABASE_SERVICE_ROLE_KEY`, `MINIAPP_SECRETO`.
+En Cloudflare (`wrangler secret put … --name respiro`): `TELEGRAM_BOT_TOKEN`, `SUPABASE_SERVICE_ROLE_KEY`, `MINIAPP_SECRETO`, `MISTRAL_API_KEY`.
 En n8n: credenciales `RESPIRO Supabase`, `RESPIRO Anthropic`, `RESPIRO Mistral` y `Google Calendar account`. El token del bot y los secretos del webhook van en el nodo `G` de cada flujo, que rellena `deploy.py`.
 
 ## Despliegue

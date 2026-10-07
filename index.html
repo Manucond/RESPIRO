@@ -301,6 +301,13 @@
     background: transparent; color: var(--text); font-size: 0.92rem; cursor:pointer; text-align:left;
   }
   .add-service-btn:hover{ border-color: var(--accent); color: var(--accent); }
+  .asistente-block{ margin-top: 18px; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; background: var(--surface-2); }
+  .asistente-block h4{ margin: 0 0 6px; font-size: 1rem; }
+  .asistente-qr{ display: none; margin-top: 14px; }
+  .asistente-qr svg{ width: 168px; height: 168px; background: #fff; padding: 8px; border-radius: 10px; }
+  @media (min-width: 720px){ .asistente-qr{ display: block; } }
+  .asistente-admin{ margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .asistente-admin input{ flex: 1; min-width: 220px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font: inherit; background: var(--surface); color: var(--text); }
   .admin-business-block{ border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; background: var(--surface); }
   .admin-business-block .dash-name{ font-size: 1rem; }
   .admin-business-block .svc-tag{ display:inline-block; font-size:0.78rem; color: var(--text-muted); background: var(--surface-2); padding: 2px 9px; border-radius: 999px; margin: 3px 4px 0 0; }
@@ -646,6 +653,7 @@
 
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" integrity="sha384-mZT2gIty7ZDdOGkxfP6joZcYdMW1Jvj9dRlfpTmaJAKKXTqzygtB22k7FLe+KZC1" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
   // ---- Captcha (Cloudflare Turnstile; la site key es pública) ----
   var TURNSTILE_SITE_KEY = "0x4AAAAAAE-IygGGGTYedfvV";
@@ -1098,8 +1106,64 @@
       html += '<button class="btn btn-primary btn-sm" onclick="subscribeNow()">Suscribirse</button>';
     }
     html += '</div></div>';
+    html += '<div class="asistente-block" id="asistenteBloque"><h4>🤖 Tu asistente de agenda</h4><p class="dash-meta">Cargando…</p></div>';
 
     content.innerHTML = html;
+    cargarAsistente();
+  }
+
+  // ---- Asistente de agenda en Telegram (bot + Mini App) ----
+  var BOT_TELEGRAM = "RespiroAsistenteBot";
+  var esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  async function cargarAsistente(){
+    var caja = document.getElementById("asistenteBloque");
+    if(!caja) return;
+    var res = await db.rpc("panel_asistente");
+    var titulo = '<h4>🤖 Tu asistente de agenda</h4>';
+    if(res.error || !res.data){
+      caja.innerHTML = titulo + '<p class="dash-meta">No hemos podido cargar tu asistente. Inténtalo de nuevo en un momento.</p>';
+      return;
+    }
+    var a = res.data;
+    if(a.estado !== "listo"){
+      caja.innerHTML = titulo + '<p class="dash-meta">Estamos preparando tu asistente: apunta, mueve y cancela citas hablándole por Telegram o por audio. Te avisaremos cuando esté listo.</p>';
+      return;
+    }
+    var intro = a.dueno_conectado
+      ? '<p class="dash-meta">✅ Ya está conectado. Ábrelo desde Telegram en el chat con @' + BOT_TELEGRAM + ' (botón «Mi agenda»).</p>'
+      : '<p class="dash-meta">Conéctalo con tu Telegram para gestionar la agenda hablando o con audios. Tarda un minuto.</p>';
+    caja.innerHTML = titulo + intro +
+      '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">' +
+      (a.dueno_conectado
+        ? '<a class="btn btn-primary btn-sm" href="https://t.me/' + BOT_TELEGRAM + '" target="_blank" rel="noopener">Abrir en Telegram</a>' +
+          '<button class="btn btn-ghost btn-sm" onclick="conectarTelegram()">Conectar en otro móvil</button>'
+        : '<button class="btn btn-primary btn-sm" onclick="conectarTelegram()">Conectar mi Telegram</button>') +
+      '</div><div id="asistenteEnlace"></div>';
+  }
+
+  async function conectarTelegram(){
+    var destino = document.getElementById("asistenteEnlace");
+    destino.innerHTML = '<p class="dash-meta" style="margin-top:10px;">Preparando tu enlace…</p>';
+    var res = await db.rpc("panel_invitacion_telegram");
+    if(res.error || !res.data || !res.data.ok){
+      var motivo = res.data && res.data.motivo;
+      destino.innerHTML = '<p class="dash-meta" style="margin-top:10px;color:#B3401F;">' +
+        (motivo === "limite" ? "Has generado muchos enlaces hoy. Usa el último o vuelve a intentarlo mañana." : "No hemos podido generar el enlace. Escríbenos y lo vemos.") + '</p>';
+      return;
+    }
+    var enlace = "https://t.me/" + BOT_TELEGRAM + "?start=" + encodeURIComponent(res.data.codigo);
+    if(esMovil){ window.location.href = enlace; }
+    var qr = "";
+    if(window.qrcode){
+      var q = qrcode(0, "M"); q.addData(enlace); q.make();
+      qr = '<div class="asistente-qr" aria-hidden="true">' + q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }) + '</div>';
+    }
+    destino.innerHTML =
+      '<p class="dash-meta" style="margin-top:12px;">' + (esMovil ? "Si no se ha abierto Telegram, pulsa:" : "Escanea el código con la cámara del móvil o abre el enlace en un dispositivo con Telegram:") + '</p>' +
+      qr +
+      '<p style="margin-top:10px;"><a class="btn btn-primary btn-sm" href="' + esc(enlace) + '" target="_blank" rel="noopener">Abrir Telegram</a></p>' +
+      '<p class="dash-meta" style="margin-top:8px;">El enlace es personal, sirve una sola vez y caduca en 48 horas. No lo compartas: para dar acceso a tu equipo usa «Equipo» dentro del asistente.</p>';
   }
 
   async function callFunction(name){
@@ -1145,6 +1209,10 @@
     var svcRes = await db.from("business_services").select("*");
     var leadsRes = await db.from("contact_requests").select("*").order("created_at", { ascending: false });
 
+    var asisRes = await db.rpc("admin_asistentes");
+    var asistentes = {};
+    (asisRes.data || []).forEach(function(a){ asistentes[a.business_id] = a; });
+
     var businesses = bizRes.data || [];
     var services = svcRes.data || [];
     var leads = leadsRes.data || [];
@@ -1166,7 +1234,16 @@
           html += '<span class="svc-tag">' + healthDot + ' ' + esc(s.service_name) + (s.status === "cancelled" ? " (cancelado)" : "") + '</span>';
         });
       }
-      html += '</div></div>';
+      html += '</div>';
+      var asis = asistentes[b.id];
+      html += '<div class="asistente-admin">' +
+        (asis ? '<span class="dash-meta">🤖 Asistente activo · ' + Number(asis.usuarios) + ' usuario(s) · calendario ' + esc(asis.calendario_id || "—") + '</span>'
+              : '<span class="dash-meta">🤖 Asistente sin activar</span>') +
+        '</div><div class="asistente-admin">' +
+        '<input id="cal-' + esc(b.id) + '" placeholder="ID del calendario de Google (…@group.calendar.google.com)" value="' + esc(asis ? asis.calendario_id || "" : "") + '" aria-label="ID del calendario de ' + esc(b.business_name) + '">' +
+        '<button class="btn btn-ghost btn-sm" onclick="activarAsistente(\'' + esc(b.id) + '\')">' + (asis ? "Guardar calendario" : "Activar asistente") + '</button>' +
+        '<span class="dash-meta" id="calmsg-' + esc(b.id) + '"></span></div>';
+      html += '</div>';
     });
     if(!businesses.length){ html += '<p class="dash-sub">Todavía no hay negocios registrados.</p>'; }
     html += '</div>';
@@ -1186,6 +1263,19 @@
     html += '</div>';
 
     content.innerHTML = html;
+  }
+
+  async function activarAsistente(businessId){
+    var input = document.getElementById("cal-" + businessId);
+    var msg = document.getElementById("calmsg-" + businessId);
+    msg.textContent = "Guardando…";
+    var res = await db.rpc("admin_activar_asistente", { p_business_id: businessId, p_calendario_id: input.value });
+    if(res.error || !res.data || !res.data.ok){
+      msg.textContent = (res.data && res.data.motivo === "calendario") ? "Ese ID de calendario no parece válido." : "No se ha podido activar.";
+      return;
+    }
+    msg.textContent = "✅ Listo. Recuerda compartir el calendario con la cuenta de Google de n8n (permiso «Hacer cambios»).";
+    setTimeout(loadAdminDashboard, 2500);
   }
 
   async function setLeadStatus(id, status){

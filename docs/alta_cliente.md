@@ -10,7 +10,17 @@ El bot lee y escribe en el Google Calendar del cliente con la credencial **Googl
 2. En **Compartir con determinadas personas**, añade la cuenta de Google conectada a n8n con el permiso **Hacer cambios en eventos**.
 3. Más abajo, en **Integrar el calendario**, copia el **ID del calendario**.
 
-## 2. Crear el cliente en Supabase
+## 2. Activar el asistente (recomendado: desde la web)
+
+Si el cliente se registró en www.respiroai.es:
+
+1. Entra en la web con tu cuenta de admin → **Mi panel**.
+2. En su negocio, pega el **ID del calendario** (paso 1) y pulsa **Activar asistente**.
+3. Listo: el cliente verá en su **Mi panel** el bloque «🤖 Tu asistente de agenda» con el botón **Conectar mi Telegram**. Desde el móvil abre el bot directamente; desde el ordenador le sale un **código QR**. Se convierte en dueño de su asistente sin que le mandéis nada.
+
+Si no tiene cuenta en la web, créalo a mano (paso 2 bis) y mándale la invitación (paso 3).
+
+## 2 bis. Crear el cliente a mano en Supabase
 
 En supabase.com → `respiro-app` → **SQL Editor**, pega esto y cambia los valores marcados:
 
@@ -39,7 +49,7 @@ select c.id, k from c, unnest(array['bot_agenda', 'informe_semanal']) k;
 - **Automatizaciones activas**: añade en `clientes_automatizaciones` las que tenga contratadas (`recordatorio`, `confirmacion`, `llamada_atendida`, `reserva_ia`, `lista_espera`, `resena`…). Solo esas aparecen en su semáforo de la Mini App.
 - **Límite de IA**: por defecto 5 $ al mes por cliente (`limite_ia_mensual_usd`). Un mensaje cuesta unos 0,003 $.
 
-## 3. Generar la invitación del dueño
+## 3. Generar la invitación del dueño (solo si no usa la web)
 
 En el chat con @RespiroAsistenteBot, como admin:
 
