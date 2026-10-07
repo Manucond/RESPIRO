@@ -40,10 +40,26 @@
     '/api/equipo': [{ nombre: 'Ana López', rol: 'dueno', desde: '2026-10-07' }, { nombre: 'Pepa', rol: 'personal', desde: '2026-10-08' }],
     '/api/espera': [{ nombre: 'Luis Mora', tipo: 'REVISION', preferencia: 'tardes', desde: '2026-10-01' }],
     '/api/noshows': { ok: true, citas: [{ nombre: 'Rosa Mar', fecha: 'jue 2', hora: '11:30' }] },
+    '/api/chat': { ok: true, mensajes: [{ texto: '📝 <b>¿Lo hago?</b>\n➕ Apuntar a <b>Quique Pérez</b> · mañana a las 19:00 · otro · +34600111222\n🗑 Cancelar a <b>Marta López</b> · el jueves 8 a las 10:00',
+      botones: [[{ texto: '✅ Sí, hazlo', data: 'b|00000000-0000-0000-0000-000000000000|si' }, { texto: '❌ No', data: 'b|00000000-0000-0000-0000-000000000000|no' }]] }] },
   };
-  window.fetch = async (url) => {
+  window.fetch = async (url, init) => {
+    if (String(url) === '/api/chat' && init && /callback/.test(init.body || '')) {
+      return new Response(JSON.stringify({ ok: true, mensajes: [{ reemplaza: true, texto: '✅ <b>Hecho</b>\n✅ <b>Quique Pérez</b> apuntado mañana a las 19:00\n✅ Cita de <b>Marta López</b> (el jueves 8 a las 10:00) cancelada', botones: [[{ texto: '📱 Ver agenda', seccion: 'hoy' }]] }] }));
+    }
     const p = String(url).split('?')[0];
     await new Promise((r) => setTimeout(r, 30));
     return new Response(JSON.stringify(datos[p] || { error: 'ruta' }), { status: datos[p] ? 200 : 404 });
   };
 })();
+
+// Para las capturas: ?demo=chat escribe un mensaje y pulsa Sí automáticamente.
+if (new URLSearchParams(location.search).get('demo') === 'chat') {
+  window.addEventListener('load', () => setTimeout(async () => {
+    const t = document.getElementById('chat-texto');
+    t.value = 'Quique mañana a las 7 y cancela a Marta del jueves';
+    t.dispatchEvent(new Event('input'));
+    document.getElementById('chat-boton').click();
+    if (new URLSearchParams(location.search).get('si') === '1') setTimeout(() => document.querySelector('.burbuja__botones button').click(), 400);
+  }, 400));
+}

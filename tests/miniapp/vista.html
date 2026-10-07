@@ -7,9 +7,12 @@
 <body>
   <header class="cabecera"><img class="cabecera__robot" src="robot/normal.svg" alt="" width="40" height="40"><div><p class="cabecera__hola" id="hola">Hola</p><p class="cabecera__cliente" id="cliente">RESPIRO</p></div></header>
   <main id="vista" class="vista" tabindex="-1" aria-live="polite"></main>
-  <nav class="pestanas" aria-label="Secciones">
-    <a href="#/hoy" data-ruta="hoy"><span aria-hidden="true">🗓</span>Hoy</a><a href="#/nueva" data-ruta="nueva"><span aria-hidden="true">➕</span>Nueva</a>
-    <a href="#/informes" data-ruta="informes"><span aria-hidden="true">📊</span>Informes</a><a href="#/equipo" data-ruta="equipo" id="pestana-equipo" hidden><span aria-hidden="true">👥</span>Equipo</a>
-    <a href="#/ayuda" data-ruta="ayuda"><span aria-hidden="true">💬</span>Ayuda</a></nav>
+<nav class="pestanas" aria-label="Secciones">
+    <a href="#/chat" data-ruta="chat"><span aria-hidden="true">💬</span>Chat</a>
+    <a href="#/hoy" data-ruta="hoy"><span aria-hidden="true">🗓</span>Agenda</a>
+    <a href="#/informes" data-ruta="informes"><span aria-hidden="true">📊</span>Informes</a>
+    <a href="#/equipo" data-ruta="equipo" id="pestana-equipo" hidden><span aria-hidden="true">👥</span>Equipo</a>
+    <a href="#/ayuda" data-ruta="ayuda"><span aria-hidden="true">❔</span>Ayuda</a>
+  </nav>
   <dialog id="hoja" class="hoja"><div class="hoja__cab"><h2 id="hoja-titulo"></h2><button class="boton boton--icono" id="hoja-cerrar" aria-label="Cerrar">✕</button></div><div id="hoja-cuerpo"></div></dialog>
 </body></html>

@@ -39,7 +39,8 @@ globalThis.fetch = async (url, init = {}) => {
 
 const env = {
   TELEGRAM_BOT_TOKEN: TOKEN, SUPABASE_URL: 'http://supabase.prueba', SUPABASE_SERVICE_ROLE_KEY: 'clave-servicio',
-  N8N_MINIAPP_URL: N8N, MINIAPP_SECRETO: SECRETO, BOT_USUARIO: 'RespiroPruebaBot',
+  N8N_MINIAPP_URL: N8N, N8N_CHAT_URL: 'http://localhost:5678/webhook/respiro-chat', MINIAPP_SECRETO: SECRETO, BOT_USUARIO: 'RespiroPruebaBot',
+  MISTRAL_BASE: MOCK, MISTRAL_API_KEY: 'clave-mistral-prueba',
   ASSETS: { fetch: async () => new Response('<!doctype html><title>x</title>', { status: 200, headers: { 'content-type': 'text/html' } }) },
 };
 
@@ -215,4 +216,83 @@ test('Cabeceras de seguridad en /app y en la API', async () => {
   assert.equal(r.headers.get('X-Content-Type-Options'), 'nosniff');
   const a = await pedir('/api/resumen', { usuario: 101 });
   assert.equal(a.h.get('Cache-Control'), 'no-store');
+});
+
+// ------------------------------------------------------------ Chat de la Mini App
+const ia = (...acciones) => fetchReal(MOCK + '/_mock/anthropic', { method: 'POST', body: JSON.stringify({ acciones: acciones.map((a) => ({
+  nombre: null, fecha: null, hora: null, tipo_cita: null, movil: null, ref_fecha: null, ref_hora: null, consulta: null, franja: null, tema: null, ...a })) }) });
+
+test('Chat: una consulta escrita se contesta en la propia Mini App', async () => {
+  await ia({ accion: 'consultar', consulta: 'dia', fecha: manana });
+  const r = await pedir('/api/chat', { usuario: 101, metodo: 'POST', cuerpo: { tipo: 'texto', texto: 'qué tengo mañana' } });
+  assert.equal(r.status, 200, JSON.stringify(r.j));
+  assert.ok(r.j.mensajes.some((m) => /Mañana/.test(m.texto) && /Ana Vidal/.test(m.texto)), JSON.stringify(r.j));
+});
+
+test('Chat: apuntar una cita con botones Sí / No y que llegue a Calendar', async () => {
+  await ia({ accion: 'crear', nombre: 'Rita Gómez', fecha: manana, hora: '15:00', movil: '622 333 444' });
+  const r = await pedir('/api/chat', { usuario: 101, metodo: 'POST', cuerpo: { tipo: 'texto', texto: 'mete a Rita Gómez mañana a las 3, 622333444' } });
+  const m = r.j.mensajes.find((x) => x.botones && x.botones.length);
+  assert.ok(m && /Rita Gómez/.test(m.texto), JSON.stringify(r.j));
+  const si = m.botones.flat().find((b) => /\|si$/.test(b.data));
+  const r2 = await pedir('/api/chat', { usuario: 101, metodo: 'POST', cuerpo: { tipo: 'callback', data: si.data } });
+  assert.equal(r2.status, 200, JSON.stringify(r2.j));
+  assert.ok(r2.j.mensajes.some((x) => x.reemplaza && /Hecho/.test(x.texto)), JSON.stringify(r2.j));
+  const cal = await (await fetchReal(MOCK + '/_mock/calendario/cal-a')).json();
+  assert.ok(cal.some((e) => e.summary === 'Rita Gómez · +34622333444 · OTRO'), JSON.stringify(cal.map((e) => e.summary)));
+});
+
+test('Chat: el botón de otro usuario no sirve (cada uno solo sus resúmenes)', async () => {
+  await ia({ accion: 'crear', nombre: 'Saúl Paz', fecha: manana, hora: '16:00', movil: '633444555' });
+  const r = await pedir('/api/chat', { usuario: 101, metodo: 'POST', cuerpo: { tipo: 'texto', texto: 'Saúl mañana a las 4' } });
+  const si = r.j.mensajes.find((x) => x.botones && x.botones.length).botones.flat().find((b) => /\|si$/.test(b.data));
+  const ajeno = await pedir('/api/chat', { usuario: 201, metodo: 'POST', cuerpo: { tipo: 'callback', data: si.data } });
+  assert.ok(!(await (await fetchReal(MOCK + '/_mock/calendario/cal-a')).json()).some((e) => e.summary.startsWith('Saúl')));
+  assert.ok(JSON.stringify(ajeno.j).length > 0);
+});
+
+test('Chat: usuario sin acceso recibe "No tienes acceso"', async () => {
+  const r = await pedir('/api/chat', { usuario: 555, metodo: 'POST', cuerpo: { tipo: 'texto', texto: 'hola' } });
+  assert.ok(r.j.mensajes.some((m) => /No tienes acceso/.test(m.texto)), JSON.stringify(r.j));
+});
+
+test('Chat: datos de botón manipulados → 400', async () => {
+  assert.equal((await pedir('/api/chat', { usuario: 101, metodo: 'POST', cuerpo: { tipo: 'callback', data: 'b|x|borrar_todo' } })).status, 400);
+  assert.equal((await pedir('/api/chat', { usuario: 101, metodo: 'POST', cuerpo: { tipo: 'texto', texto: '' } })).status, 400);
+});
+
+test('Nota de voz desde la Mini App: se transcribe, se contesta y se apunta el gasto', async () => {
+  await fetchReal(MOCK + '/_mock/mistral', { method: 'POST', body: JSON.stringify({ text: '¿Qué tengo mañana?' }) });
+  await ia({ accion: 'consultar', consulta: 'dia', fecha: manana });
+  const antes = Number(sql(`select count(*) from respiro.consumo_ia where cliente_id='${A}' and uso='transcripcion'`));
+  const r = await worker.fetch(new Request('https://www.respiroai.es/api/voz', { method: 'POST', body: new Uint8Array(3000).fill(7),
+    headers: { Authorization: 'tma ' + initData(101), 'Content-Type': 'audio/webm', 'X-Duracion': '6' } }), env);
+  const j = await r.json();
+  assert.equal(r.status, 200, JSON.stringify(j));
+  assert.equal(j.transcripcion, '¿Qué tengo mañana?');
+  assert.ok(j.mensajes.some((m) => /🎧/.test(m.texto) && /Mañana/.test(m.texto)), JSON.stringify(j));
+  assert.equal(Number(sql(`select count(*) from respiro.consumo_ia where cliente_id='${A}' and uso='transcripcion'`)), antes + 1);
+  const llamadas = await (await fetchReal(MOCK + '/_mock/llamadas')).json();
+  assert.ok(llamadas.some((c) => c.servicio === 'mistral' && c.multipart));
+});
+
+test('Nota de voz: formato, duración y usuario sin acceso', async () => {
+  const voz = (uid, tipo, seg) => worker.fetch(new Request('https://www.respiroai.es/api/voz', { method: 'POST', body: new Uint8Array(100),
+    headers: { Authorization: 'tma ' + initData(uid), 'Content-Type': tipo, 'X-Duracion': String(seg) } }), env);
+  assert.equal((await voz(101, 'text/html', 5)).status, 415);
+  assert.equal((await voz(101, 'audio/webm', 300)).status, 400);
+  assert.equal((await voz(555, 'audio/webm', 5)).status, 403);
+});
+
+test('Chat en n8n: firma falsa → 401 y repetición → 409', async () => {
+  const URL_CHAT = 'http://localhost:5678/webhook/respiro-chat';
+  const payload = JSON.stringify({ tipo: 'texto', texto: '/ayuda', user_id: 101, nombre: 'Ana' });
+  const falso = await fetchReal(URL_CHAT, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ts: Math.floor(Date.now() / 1000), nonce: 'b'.repeat(24), payload, firma: '0'.repeat(64) }) });
+  assert.equal(falso.status, 401);
+  const firmado = await firmar(SECRETO, payload);
+  const r1 = await fetchReal(URL_CHAT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(firmado) });
+  assert.equal(r1.status, 200);
+  const r2 = await fetchReal(URL_CHAT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(firmado) });
+  assert.equal(r2.status, 409);
 });

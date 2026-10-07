@@ -67,7 +67,7 @@ if (j.pendiente) {
       logs.push(log(cfg, 'bot_agenda', 'interpretar', 'error', origen, { motivo: 'api_ia' }));
       admin.push(`⚠️ ${cfg.cliente}: la IA ha fallado (${String(j.ia_error_api || '').slice(0, 150)})`);
     } else if (a.accion === 'saludo') {
-      info.push(['👋 ¡Aquí estoy! Dime qué necesitas de tu agenda.', '😊 ¡A mandar! Si necesitas algo de la agenda, dímelo como te salga.'][m.upd % 2]);
+      info.push(['👋 ¡Aquí estoy! Dime qué necesitas de tu agenda.', '😊 ¡A mandar! Si necesitas algo de la agenda, dímelo como te salga.'][String(m.upd).length % 2]);
     } else {
       info.push('🙈 Perdona, no lo he pillado. ¿Quieres apuntar, mover o cancelar una cita, o mirar la agenda? Dímelo como te salga.');
       logs.push(log(cfg, 'bot_agenda', 'no_entendido', 'omitido', origen, { canal: m.via_voz ? 'voz' : 'texto' }));

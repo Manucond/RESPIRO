@@ -135,18 +135,42 @@ def flujo_bot():
     f.nodo('Responder 200', 'n8n-nodes-base.respondToWebhook', 1.1, {
         'respondWith': 'json', 'responseBody': '={"ok":true}', 'options': {}}, (X(1), Y(0)))
     f.code('G', 'g.js', (X(2), Y(0)), con_lib=False)
-    f.code('Norm', 'norm.js', (X(3), Y(0)))
-    f.pg('Dedupe', "select respiro.dedupe($1, 'telegram') as nuevo, $2::jsonb as m",
-         "={{ [ 'tg:u:' + $json.upd, JSON.stringify($json) ] }}", (X(4), Y(0)))
+    # Segunda entrada: el chat de la Mini App (lo llama el Worker, firmado). Responde por HTTP.
+    f.nodo('Mini App · Chat', 'n8n-nodes-base.webhook', 2, {
+        'httpMethod': 'POST', 'path': 'respiro-chat', 'responseMode': 'responseNode', 'options': {}},
+        (X(0), Y(-1.5)), webhookId=_id('webhook-chat', 'bot'))
+    f.si('¿Desde la Mini App?', "={{ $('Mini App · Chat').isExecuted }}", (X(2.5), Y(-0.75)))
+    f.nodo('Firma chat', 'n8n-nodes-base.crypto', 1, {
+        'action': 'hmac', 'type': 'SHA256',
+        'value': "={{ $('Mini App · Chat').first().json.body.ts + '.' + $('Mini App · Chat').first().json.body.nonce + '.' + $('Mini App · Chat').first().json.body.payload }}",
+        'dataPropertyName': 'firma_calc', 'secret': "={{ $('G').first().json.miniapp_secreto }}", 'encoding': 'hex'},
+        (X(3), Y(-1.5)))
+    f.code('Norm', 'norm.js', (X(3.5), Y(0)))
+    f.si('¿Entrada válida?', '={{ !$json.rechazado }}', (X(4), Y(0)))
+    f.pg('Dedupe', "select respiro.dedupe($1, $3) as nuevo, $2::jsonb as m",
+         "={{ [ $json.dedupe, JSON.stringify($json), $json.canal ] }}", (X(4.5), Y(0)))
     f.si('¿Nuevo?', '={{ $json.nuevo }}', (X(5), Y(0)))
+    f.si('¿Repetida en la Mini App?', "={{ ($json.m || {}).canal === 'miniapp' }}", (X(5.5), Y(-1.5)))
+    f.nodo('Chat · Rechazo', 'n8n-nodes-base.code', 2, {'jsCode': (
+        "const j = $input.first().json;\n"
+        "const motivo = j.rechazado || 'repetida';\n"
+        "return [{ json: { status: motivo === 'repetida' ? 409 : (motivo === 'firma' || motivo === 'caducada' ? 401 : 400), respuesta: { ok: false, error: motivo } } }];")},
+        (X(6), Y(-1.5)))
     f.pg('Auth', 'select respiro.auth_chat($1::bigint) as cfg, $2::jsonb as m',
          '={{ [ $json.m.chat_id, JSON.stringify($json.m) ] }}', (X(6), Y(0)))
     f.code('Ruta', 'ruta.js', (X(7), Y(0)))
     f.switch('Ruta · ¿Qué es?', '$json.ruta', ['start', 'comando', 'callback', 'voz', 'texto'], (X(8), Y(0)))
-    for a, b in [('Telegram · Entrada', 'Responder 200'), ('Responder 200', 'G'), ('G', 'Norm'), ('Norm', 'Dedupe'),
+    for a, b in [('Telegram · Entrada', 'Responder 200'), ('Responder 200', 'G'), ('Mini App · Chat', 'G'),
+                 ('G', '¿Desde la Mini App?'), ('Firma chat', 'Norm'), ('Norm', '¿Entrada válida?'),
                  ('Dedupe', '¿Nuevo?'), ('Auth', 'Ruta'), ('Ruta', 'Ruta · ¿Qué es?')]:
         f.unir(a, b)
+    f.unir('¿Desde la Mini App?', 'Firma chat', 0)
+    f.unir('¿Desde la Mini App?', 'Norm', 1)
+    f.unir('¿Entrada válida?', 'Dedupe', 0)
+    f.unir('¿Entrada válida?', 'Chat · Rechazo', 1)
     f.unir('¿Nuevo?', 'Auth', 0)
+    f.unir('¿Nuevo?', '¿Repetida en la Mini App?', 1)
+    f.unir('¿Repetida en la Mini App?', 'Chat · Rechazo', 0)
 
     # start (invitación)
     f.pg('Canjear invitación', 'select respiro.canjear_invitacion($1, $2::bigint, $3::bigint, $4) as r, $5::jsonb as x',
@@ -304,17 +328,24 @@ def flujo_bot():
          '={{ [ JSON.stringify($json.salida.logs || []), JSON.stringify($json.salida.tg || []), '
          'JSON.stringify($json.salida.consumo || null), $json.salida.admin || "" ] }}', (X(30), Y(0)))
     f.code('Salida', 'salida.js', (X(31), Y(0)))
+    f.si('¿Respuesta a la Mini App?', '={{ !!$json.respuesta }}', (X(31.5), Y(-1)))
+    f.nodo('Responder chat', 'n8n-nodes-base.respondToWebhook', 1.1, {
+        'respondWith': 'json', 'responseBody': '={{ JSON.stringify($json.respuesta) }}',
+        'options': {'responseCode': '={{ $json.status || 200 }}'}}, (X(32), Y(-2)))
     f.http('TG · API', TG_API, (X(32), Y(0)))
     for origen, salida in [('Bienvenida', 0), ('Respuestas fijas', 0), ('Comando · Respuesta', 0), ('Resumen', 0),
                            ('Ejecutar · Resultado', 0), ('Consulta', 0), ('Callback · ¿Válido?', 1), ('¿Transcribir?', 1),
                            ('¿Audio entendido?', 1), ('¿Leer agenda?', 1), ('Siguiente', 4), ('Comando · ¿Qué hace?', 2)]:
         f.unir(origen, 'Log y salida', salida)
     f.unir('Log y salida', 'Salida')
-    f.unir('Salida', 'TG · API')
+    f.unir('Salida', '¿Respuesta a la Mini App?')
+    f.unir('¿Respuesta a la Mini App?', 'Responder chat', 0)
+    f.unir('¿Respuesta a la Mini App?', 'TG · API', 1)
+    f.unir('Chat · Rechazo', 'Responder chat')
     # Si Telegram rechaza un mensaje (HTML mal formado, chat bloqueado…) no se calla: aviso a los admins.
     f.nodo('TG · ¿Rechazado?', 'n8n-nodes-base.code', 2, {'jsCode': (
         "// Telegram responde ok:false o error HTTP → aviso a admins (sin el texto del mensaje).\n"
-        "const env = $('Salida').all();\n"
+        "const env = $('Salida').all().filter((x) => x.json.tg);\n"
         "const fallos = $input.all().map((r, i) => ({ r: r.json || {}, m: (env[i] && env[i].json.tg) || {} }))\n"
         "  .filter((x) => x.r.ok !== true && x.m.method !== 'answerCallbackQuery' && !/message is not modified/i.test(JSON.stringify(x.r)));\n"
         "if (!fallos.length) return [];\n"

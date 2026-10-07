@@ -67,6 +67,238 @@
   document.getElementById('hoja-cerrar').addEventListener('click', () => hoja.close());
   hoja.addEventListener('click', (e) => { if (e.target === hoja) hoja.close(); });
 
+
+  // ------------------------------------------------------------ CHAT (pantalla principal)
+  // Mismo asistente que en Telegram: texto o nota de voz → resumen con botones → Sí.
+  // El historial solo vive mientras la app está abierta (no se guarda en el móvil).
+  const ETIQUETAS_OK = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', S: 's', CODE: 'code' };
+  function htmlSeguro(html) {
+    // El bot manda HTML sencillo (<b>, <i>). Se reconstruye nodo a nodo: nada más pasa.
+    const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html');
+    const copiar = (origen, destino) => {
+      origen.childNodes.forEach((n) => {
+        if (n.nodeType === 3) destino.appendChild(document.createTextNode(n.textContent));
+        else if (n.nodeType === 1) {
+          const tag = ETIQUETAS_OK[n.tagName];
+          const el = tag ? document.createElement(tag) : document.createDocumentFragment();
+          copiar(n, el);
+          destino.appendChild(el);
+        }
+      });
+    };
+    const frag = document.createDocumentFragment();
+    copiar(doc.body.firstChild, frag);
+    return frag;
+  }
+
+  const SUGERENCIAS = ['¿Qué tengo hoy?', '¿Huecos libres mañana?', 'Apunta una cita', '¿Cómo va la semana?'];
+  let grabador = null;
+
+  function pantallaChat() {
+    vista.classList.add('vista--chat');
+    vista.innerHTML = `
+      <div class="chat">
+        <div class="chat__lista" id="chat-lista" role="log" aria-live="polite" aria-label="Conversación con el asistente"></div>
+        <div class="sugerencias" id="chat-sugerencias">${SUGERENCIAS.map((t) => `<button class="chip" data-sugerencia="${esc(t)}">${esc(t)}</button>`).join('')}</div>
+        <form class="redactor" id="chat-form">
+          <textarea id="chat-texto" rows="1" maxlength="1000" placeholder="Escribe o graba un audio…" aria-label="Mensaje"></textarea>
+          <button type="button" class="boton boton--icono" id="chat-boton" aria-label="Grabar nota de voz">🎤</button>
+        </form>
+      </div>`;
+    if (!estado.chat) {
+      const nombre = (estado.resumen.usuario.nombre || '').split(' ')[0];
+      estado.chat = [{ de: 'bot', texto: `👋 ¡Hola${nombre ? ', ' + esc(nombre) : ''}! Soy tu asistente de agenda.\nEscríbeme o mándame un audio como se lo dirías a tu recepcionista. Antes de tocar tu calendario te enseño un resumen.`, foto: 'robot/normal.svg' }];
+    }
+    estado.chat.forEach((m) => pintarMensaje(m));
+    document.getElementById('chat-sugerencias').hidden = estado.chat.some((m) => m.de === 'yo');
+    vista.querySelectorAll('[data-sugerencia]').forEach((b) => b.addEventListener('click', () => {
+      if (b.dataset.sugerencia === 'Apunta una cita') { const t = document.getElementById('chat-texto'); t.value = 'Apunta a '; t.focus(); actualizarBoton(); return; }
+      enviarTexto(b.dataset.sugerencia);
+    }));
+    const texto = document.getElementById('chat-texto');
+    texto.addEventListener('input', () => { texto.style.height = 'auto'; texto.style.height = Math.min(texto.scrollHeight, 120) + 'px'; actualizarBoton(); });
+    texto.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !('ontouchstart' in window)) { e.preventDefault(); enviarDesdeCaja(); } });
+    document.getElementById('chat-form').addEventListener('submit', (e) => { e.preventDefault(); enviarDesdeCaja(); });
+    document.getElementById('chat-boton').addEventListener('click', () => {
+      if (texto.value.trim()) enviarDesdeCaja(); else empezarGrabacion();
+    });
+    bajar();
+  }
+
+  function actualizarBoton() {
+    const b = document.getElementById('chat-boton');
+    if (!b) return;
+    const hay = !!document.getElementById('chat-texto').value.trim();
+    b.textContent = hay ? '➤' : '🎤';
+    b.setAttribute('aria-label', hay ? 'Enviar' : 'Grabar nota de voz');
+  }
+  const bajar = () => { const l = document.getElementById('chat-lista'); if (l) l.scrollTop = l.scrollHeight; };
+
+  function pintarMensaje(m) {
+    const lista = document.getElementById('chat-lista');
+    if (!lista) return;
+    const div = document.createElement('div');
+    div.className = 'burbuja burbuja--' + m.de;
+    if (m.foto) { const img = document.createElement('img'); img.className = 'foto'; img.alt = ''; img.src = m.foto.replace(/^https:\/\/[^/]+\/app\//, '').replace(/\.png$/, '.svg'); div.appendChild(img); }
+    if (m.de === 'bot') div.appendChild(htmlSeguro(m.texto)); else div.appendChild(document.createTextNode(m.texto));
+    if (m.botones && m.botones.length) {
+      const caja = document.createElement('div');
+      caja.className = 'burbuja__botones';
+      m.botones.flat().forEach((b) => {
+        const el = document.createElement('button');
+        el.className = 'chip';
+        el.textContent = b.texto;
+        el.disabled = !!m.usado;
+        el.addEventListener('click', () => {
+          if (b.seccion) { location.hash = '#/' + (b.seccion === 'nueva' ? 'nueva' : b.seccion); return; }
+          m.usado = true;
+          caja.querySelectorAll('button').forEach((x) => { x.disabled = true; });
+          enviarBoton(b, m);
+        });
+        caja.appendChild(el);
+      });
+      div.appendChild(caja);
+    }
+    m.el = div;
+    lista.appendChild(div);
+    bajar();
+  }
+
+  function escribiendo(mostrar) {
+    const lista = document.getElementById('chat-lista');
+    const prev = document.getElementById('escribiendo');
+    if (prev) prev.remove();
+    if (!mostrar || !lista) return;
+    const d = document.createElement('div');
+    d.id = 'escribiendo';
+    d.className = 'burbuja burbuja--bot escribiendo';
+    d.innerHTML = '<img src="robot/pensando.svg" alt=""><span class="puntos" aria-label="El asistente está pensando"><span></span><span></span><span></span></span>';
+    lista.appendChild(d);
+    bajar();
+  }
+
+  function recibir(r, origen) {
+    escribiendo(false);
+    for (const x of r.mensajes || []) {
+      if (x.quitar_botones) continue;
+      const m = { de: 'bot', texto: x.texto || '', botones: x.botones || [], foto: x.foto };
+      // Una edición sustituye al resumen cuyo botón se pulsó (como en Telegram).
+      if (x.reemplaza && origen && origen.el) {
+        Object.assign(origen, m, { usado: false });
+        const viejo = origen.el;
+        pintarMensaje(origen);
+        viejo.replaceWith(origen.el);
+        continue;
+      }
+      estado.chat.push(m);
+      pintarMensaje(m);
+    }
+    if (!(r.mensajes || []).length) { const m = { de: 'bot', texto: '👌' }; estado.chat.push(m); pintarMensaje(m); }
+  }
+
+  function fallo(e, origen) {
+    escribiendo(false);
+    if (origen) { origen.usado = false; origen.el.querySelectorAll('button').forEach((x) => { x.disabled = false; }); }
+    const [t, s2] = e.codigo === 'transcripcion' ? ['No he podido escuchar el audio', '¿Me lo escribes?'] : textoError(e);
+    const m = { de: 'bot', texto: `😵 ${t}. ${s2}` };
+    estado.chat.push(m);
+    pintarMensaje(m);
+  }
+
+  async function enviarTexto(texto) {
+    const t = texto.trim();
+    if (!t) return;
+    document.getElementById('chat-sugerencias').hidden = true;
+    const m = { de: 'yo', texto: t };
+    estado.chat.push(m);
+    pintarMensaje(m);
+    escribiendo(true);
+    vibrar();
+    try { recibir(await api('/api/chat', { metodo: 'POST', cuerpo: { tipo: 'texto', texto: t } })); } catch (e) { fallo(e); }
+  }
+  function enviarDesdeCaja() {
+    const caja = document.getElementById('chat-texto');
+    const t = caja.value;
+    caja.value = ''; caja.style.height = ''; actualizarBoton();
+    enviarTexto(t);
+  }
+  async function enviarBoton(b, origen) {
+    escribiendo(true);
+    vibrar();
+    try { recibir(await api('/api/chat', { metodo: 'POST', cuerpo: { tipo: 'callback', data: b.data } }), origen); } catch (e) { fallo(e, origen); }
+  }
+
+  // --- Notas de voz ---
+  const FORMATOS = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus', 'audio/webm'];
+  async function empezarGrabacion() {
+    if (!navigator.mediaDevices || !window.MediaRecorder) return sinMicro();
+    let flujo;
+    try { flujo = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch (e) { return sinMicro(e && e.name === 'NotAllowedError'); }
+    const tipo = FORMATOS.find((f) => MediaRecorder.isTypeSupported(f)) || '';
+    const rec = new MediaRecorder(flujo, tipo ? { mimeType: tipo } : undefined);
+    const trozos = [];
+    const inicio = Date.now();
+    grabador = { rec, flujo, cancelado: false };
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) trozos.push(e.data); };
+    rec.onstop = () => {
+      flujo.getTracks().forEach((t) => t.stop());
+      clearInterval(grabador.reloj);
+      const seg = Math.max(1, Math.round((Date.now() - inicio) / 1000));
+      const cancelado = grabador.cancelado;
+      grabador = null;
+      restaurarRedactor();
+      if (!cancelado) enviarAudio(new Blob(trozos, { type: (rec.mimeType || tipo || 'audio/webm') }), seg);
+    };
+    rec.start();
+    vibrar('medium');
+    const form = document.getElementById('chat-form');
+    form.innerHTML = `<div class="grabacion" role="status"><span class="rec" aria-hidden="true"></span><span id="grab-tiempo">0:00</span>
+        <span class="suave">Grabando…</span><button type="button" class="boton boton--peque boton--secundario" id="grab-cancelar">Cancelar</button></div>
+      <button type="button" class="boton boton--icono grabando" id="grab-enviar" aria-label="Enviar nota de voz">➤</button>`;
+    document.getElementById('grab-cancelar').addEventListener('click', () => { grabador.cancelado = true; rec.stop(); });
+    document.getElementById('grab-enviar').addEventListener('click', () => rec.stop());
+    grabador.reloj = setInterval(() => {
+      const s2 = Math.round((Date.now() - inicio) / 1000);
+      const el = document.getElementById('grab-tiempo');
+      if (el) el.textContent = `${Math.floor(s2 / 60)}:${String(s2 % 60).padStart(2, '0')}`;
+      if (s2 >= 120 && rec.state === 'recording') rec.stop();   // máximo 2 minutos
+    }, 250);
+  }
+  function restaurarRedactor() {
+    const form = document.getElementById('chat-form');
+    if (!form) return;
+    form.innerHTML = `<textarea id="chat-texto" rows="1" maxlength="1000" placeholder="Escribe o graba un audio…" aria-label="Mensaje"></textarea>
+      <button type="button" class="boton boton--icono" id="chat-boton" aria-label="Grabar nota de voz">🎤</button>`;
+    const texto = document.getElementById('chat-texto');
+    texto.addEventListener('input', () => { texto.style.height = 'auto'; texto.style.height = Math.min(texto.scrollHeight, 120) + 'px'; actualizarBoton(); });
+    texto.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !('ontouchstart' in window)) { e.preventDefault(); enviarDesdeCaja(); } });
+    document.getElementById('chat-boton').addEventListener('click', () => { if (texto.value.trim()) enviarDesdeCaja(); else empezarGrabacion(); });
+  }
+  async function enviarAudio(blob, seg) {
+    document.getElementById('chat-sugerencias').hidden = true;
+    const m = { de: 'yo', texto: `🎤 Nota de voz · ${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}` };
+    estado.chat.push(m);
+    pintarMensaje(m);
+    escribiendo(true);
+    try {
+      const r = await fetch('/api/voz', { method: 'POST', body: blob,
+        headers: { Authorization: 'tma ' + ((tg && tg.initData) || ''), 'Content-Type': blob.type.split(';')[0], 'X-Duracion': String(seg) } });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new ErrorApi(j.error || 'servicio', r.status);
+      if (j.transcripcion) { m.texto = `🎤 «${j.transcripcion}»`; m.el.textContent = m.texto; }
+      recibir(j);
+    } catch (e) { fallo(e); }
+  }
+  function sinMicro(denegado) {
+    const m = { de: 'bot', texto: denegado
+      ? '🎤 No tengo permiso para usar el micrófono. Puedes darlo en los ajustes de Telegram, o mandarme el audio por el chat de Telegram.'
+      : '🎤 Aquí no puedo usar el micrófono. Mándame el audio por el chat de Telegram: lo entiendo igual.', botones: [[{ texto: 'Ir al chat de Telegram', cerrar: true }]] };
+    estado.chat.push(m);
+    pintarMensaje(m);
+    const ult = m.el.querySelector('.burbuja__botones button');
+    if (ult) { const nuevo = ult.cloneNode(true); ult.replaceWith(nuevo); nuevo.addEventListener('click', () => { if (tg && tg.close) tg.close(); }); }
+  }
+
   // ------------------------------------------------------------ HOY
   const ESTADO_TXT = { confirmada: '✓ Confirmada', pendiente: 'Pendiente', no_vino: '✕ No vino' };
   async function pantallaHoy() {
@@ -86,6 +318,7 @@
       </div>
       <section class="tarjeta" aria-labelledby="t-agenda">
         <div class="tarjeta__cab"><h2 id="t-agenda">${esc(fechaLarga(estado.dia).replace(/^./, (c) => c.toUpperCase()))}</h2><span class="suave" id="n-citas"></span></div>
+        <a class="boton boton--secundario boton--peque" href="#/nueva">➕ Nueva cita</a>
         <div id="agenda">${robot('pensando', 'Mirando tu agenda…', '', true)}</div>
       </section>`;
     vista.querySelectorAll('[data-dia]').forEach((b) => b.addEventListener('click', () => { estado.dia = b.dataset.dia; vibrar(); pantallaHoy(); }));
@@ -449,16 +682,19 @@
   }
 
   // ------------------------------------------------------------ navegación
-  const PANTALLAS = { hoy: pantallaHoy, nueva: pantallaNueva, informes: pantallaInformes, equipo: pantallaEquipo, ayuda: pantallaAyuda };
+  const PANTALLAS = { chat: pantallaChat, hoy: pantallaHoy, nueva: pantallaNueva, informes: pantallaInformes, equipo: pantallaEquipo, ayuda: pantallaAyuda };
   function navegar() {
-    let ruta = (location.hash.replace('#/', '') || 'hoy').split('?')[0];
-    if (!PANTALLAS[ruta]) ruta = 'hoy';
-    if (ruta === 'equipo' && !['dueno', 'admin'].includes(estado.resumen.usuario.rol)) ruta = 'hoy';
+    let ruta = (location.hash.replace('#/', '') || 'chat').split('?')[0];
+    if (!PANTALLAS[ruta]) ruta = 'chat';
+    if (grabador && grabador.rec.state === 'recording') { grabador.cancelado = true; grabador.rec.stop(); }
+    vista.classList.toggle('vista--chat', ruta === 'chat');
+    if (ruta === 'equipo' && !['dueno', 'admin'].includes(estado.resumen.usuario.rol)) ruta = 'chat';
     estado.ruta = ruta;
+    const pestana = ruta === 'nueva' ? 'hoy' : ruta;
     document.querySelectorAll('.pestanas a').forEach((a) => {
-      if (a.dataset.ruta === ruta) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      if (a.dataset.ruta === pestana) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
-    if (tg && tg.BackButton) { if (ruta === 'hoy') tg.BackButton.hide(); else tg.BackButton.show(); }
+    if (tg && tg.BackButton) { if (ruta === 'chat') tg.BackButton.hide(); else tg.BackButton.show(); }
     window.scrollTo(0, 0);
     PANTALLAS[ruta]();
   }
@@ -474,7 +710,7 @@
       tg.expand();
       try { tg.setHeaderColor('secondary_bg_color'); } catch (e) { /* versiones antiguas */ }
       tg.onEvent('themeChanged', aplicarTema);
-      if (tg.BackButton) tg.BackButton.onClick(() => { location.hash = '#/hoy'; });
+      if (tg.BackButton) tg.BackButton.onClick(() => { location.hash = estado.ruta === 'nueva' ? '#/hoy' : '#/chat'; });
     }
     aplicarTema();
     if (!tg || !tg.initData) {
