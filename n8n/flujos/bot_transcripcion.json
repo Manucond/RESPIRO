@@ -1,0 +1,303 @@
+{
+  "name": "RESPIRO · Bot Transcripción",
+  "nodes": [
+    {
+      "parameters": {
+        "width": 560,
+        "height": 220,
+        "content": "# Transcripción de notas de voz\nTelegram → descarga → **Mistral Voxtral (UE)** → solo devuelve el texto.\nEste flujo **no guarda ejecuciones** (ni correctas ni con error): el audio no queda almacenado en n8n.\n🔑 `RESPIRO Mistral` (cabecera Authorization: Bearer …) y `RESPIRO Supabase`."
+      },
+      "id": "916c00f7-01e9-58a7-855b-885a9964df75",
+      "name": "Nota",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "d7471796-81d8-5adf-8a33-e21323fb5087",
+      "name": "Inicio",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { tg_base: '__TG_BASE__', tg_token: '__TG_TOKEN__', mistral_base: '__MISTRAL_BASE__' } }];\n"
+      },
+      "id": "2e4cbebc-10f4-5caf-b9b2-7e0f7afb2d9a",
+      "name": "G",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transcripción · Entrada: datos mínimos (nunca el audio en el flujo padre).\n// Si falta algo se corta aquí: no se descarga ni se transcribe nada.\nconst i = $('Inicio').first().json;\nif (!i.file_id || !/^[0-9a-f-]{36}$/.test(String(i.cliente_id || ''))) {\n  throw new Error('Transcripción llamada sin file_id o cliente_id');\n}\nreturn [{ json: { file_id: String(i.file_id), segundos: Number(i.segundos) || 0, cliente_id: i.cliente_id } }];\n"
+      },
+      "id": "63a0b619-d0c9-580c-89ed-8a012c4b7b51",
+      "name": "Transcripción · Entrada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "timeout": 30000
+        },
+        "url": "={{ $('G').first().json.tg_base }}/bot{{ $('G').first().json.tg_token }}/getFile",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "file_id",
+              "value": "={{ $json.file_id }}"
+            }
+          ]
+        },
+        "authentication": "none"
+      },
+      "id": "e213681b-9281-5f96-abc4-ab3e70b24b37",
+      "name": "TG · Ruta del audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "audio"
+            }
+          }
+        },
+        "url": "={{ $('G').first().json.tg_base }}/file/bot{{ $('G').first().json.tg_token }}/{{ $json.result.file_path }}",
+        "authentication": "none"
+      },
+      "id": "66b20fdf-c07e-5432-bc66-0ec513ec6973",
+      "name": "TG · Descargar audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {
+          "timeout": 60000
+        },
+        "method": "POST",
+        "url": "={{ $('G').first().json.mistral_base }}/v1/audio/transcriptions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "audio"
+            },
+            {
+              "name": "model",
+              "value": "voxtral-mini-latest"
+            },
+            {
+              "name": "language",
+              "value": "es"
+            }
+          ]
+        }
+      },
+      "id": "b41711bb-f2c8-59c7-9a44-89b4897536c2",
+      "name": "🔑 Mistral · Transcribir",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "__CRED_MISTRAL__",
+          "name": "RESPIRO Mistral"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transcripción · Salida: devuelve solo el texto. El audio (binario) se\n// descarta aquí: no se devuelve al flujo padre y este subflujo no guarda\n// ejecuciones, así que n8n no lo conserva.\nconst r = $input.first().json;\nconst ent = $('Transcripción · Entrada').first().json;\nlet texto = null;\nlet error = null;\nif (r.error) error = String(r.error.message || r.error.description || JSON.stringify(r.error)).slice(0, 200);\nelse texto = String(r.text || '').trim() || null;\nif (!error && !texto) error = 'vacio';\nreturn [{ json: {\n  texto, error,\n  consumo: { cliente_id: ent.cliente_id, modelo: 'voxtral-mini-latest', segundos: ent.segundos },\n} }];\n"
+      },
+      "id": "15114288-30d3-595f-a1f9-aed7445e7c4a",
+      "name": "Transcripción · Salida",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select case when length($1) = 36 then respiro.registrar_consumo_audio($1::uuid, $2, $3::int) end as coste, $4::jsonb as r",
+        "options": {
+          "queryReplacement": "={{ [ $json.consumo.cliente_id || \"\", $json.consumo.modelo, $json.consumo.segundos, JSON.stringify({ texto: $json.texto, error: $json.error }) ] }}"
+        }
+      },
+      "id": "c547d355-885a-5a91-b084-cfaca0644cf2",
+      "name": "Consumo audio",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1680,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "__CRED_PG__",
+          "name": "RESPIRO Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: $input.first().json.r }];"
+      },
+      "id": "408667d0-df5b-5c90-937d-50497886ddbb",
+      "name": "Devolver texto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Inicio": {
+      "main": [
+        [
+          {
+            "node": "G",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "G": {
+      "main": [
+        [
+          {
+            "node": "Transcripción · Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcripción · Entrada": {
+      "main": [
+        [
+          {
+            "node": "TG · Ruta del audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TG · Ruta del audio": {
+      "main": [
+        [
+          {
+            "node": "TG · Descargar audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TG · Descargar audio": {
+      "main": [
+        [
+          {
+            "node": "🔑 Mistral · Transcribir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔑 Mistral · Transcribir": {
+      "main": [
+        [
+          {
+            "node": "Transcripción · Salida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcripción · Salida": {
+      "main": [
+        [
+          {
+            "node": "Consumo audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consumo audio": {
+      "main": [
+        [
+          {
+            "node": "Devolver texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Madrid",
+    "errorWorkflow": "__WF_ERRORES__",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}

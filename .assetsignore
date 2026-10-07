@@ -1,5 +1,16 @@
 .git
+.gitignore
 .wrangler
+.dev.vars*
+.env*
 supabase
+n8n
+docs
+scripts
+tests
+node_modules
+package.json
+package-lock.json
+README.md
 wrangler.jsonc
 worker.js

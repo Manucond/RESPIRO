@@ -1,0 +1,138 @@
+{
+  "name": "RESPIRO · Bot Errores",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "946b55a5-8245-5b65-bba8-6f406dcfcb3c",
+      "name": "Error",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// G · configuración global de RESPIRO. Los valores __ASI__ los rellena\n// n8n/deploy.py al subir el flujo (nunca se guardan secretos en el repo).\nreturn [{ json: {\n  tg_base: '__TG_BASE__',\n  tg_token: '__TG_TOKEN__',\n  tg_secret: '__TG_SECRET__',\n  bot_usuario: '__BOT_USUARIO__',\n  gcal_base: '__GCAL_BASE__',\n  anthropic_base: '__ANTHROPIC_BASE__',\n  mistral_base: '__MISTRAL_BASE__',\n  miniapp_url: '__MINIAPP_URL__',\n  miniapp_secreto: '__MINIAPP_SECRETO__',\n} }];\n"
+      },
+      "id": "5619d0a5-7990-588b-bdaa-a5bb012ee7c0",
+      "name": "G",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select respiro.admins() as admins",
+        "options": {
+          "queryReplacement": "={{ [] }}"
+        }
+      },
+      "id": "9196bc3b-dace-5a89-855b-440e00c7dbf9",
+      "name": "Admins",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        480,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "__CRED_PG__",
+          "name": "RESPIRO Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aviso a los admins. Solo nombre del flujo, nodo y mensaje (recortado): sin datos de pacientes.\nconst e = $('Error').first().json;\nconst esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst msg = String((e.execution && e.execution.error && e.execution.error.message) || 'Error desconocido').slice(0, 200);\nconst nodo = (e.execution && e.execution.lastNodeExecuted) || '?';\nconst texto = `🚨 <b>${esc(e.workflow && e.workflow.name)}</b>\\nNodo: ${esc(nodo)}\\n${esc(msg)}`;\nreturn ($input.first().json.admins || []).map((chat) => ({ json: { tg: { method: 'sendMessage', body: { chat_id: chat, text: texto, parse_mode: 'HTML' } } } }));"
+      },
+      "id": "424aff12-f2e7-541a-97f8-bd00bc8e38c2",
+      "name": "Aviso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "timeout": 30000
+        },
+        "method": "POST",
+        "url": "={{ $('G').first().json.tg_base }}/bot{{ $('G').first().json.tg_token }}/{{ $json.tg.method }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.tg.body) }}",
+        "authentication": "none"
+      },
+      "id": "a8572ff5-8c53-59f7-a215-9c2d04f0b5dd",
+      "name": "TG · API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Error": {
+      "main": [
+        [
+          {
+            "node": "G",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "G": {
+      "main": [
+        [
+          {
+            "node": "Admins",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Admins": {
+      "main": [
+        [
+          {
+            "node": "Aviso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aviso": {
+      "main": [
+        [
+          {
+            "node": "TG · API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Madrid",
+    "saveDataSuccessExecution": "all"
+  }
+}

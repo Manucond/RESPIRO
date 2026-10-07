@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="RESPIRO"><title>RESPIRO</title><rect width="200" height="200" fill="#F5E6BF"/><g transform="translate(100 104) scale(1.2) translate(-100 -78)">
+  <!-- antena -->
+  <line x1="100" y1="40" x2="100" y2="22" stroke="#16213E" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="100" cy="17" r="8" fill="#E8743B" stroke="#16213E" stroke-width="4"/>
+  <!-- orejas -->
+  <rect x="27" y="70" width="17" height="34" rx="7" fill="#E3A92B" stroke="#16213E" stroke-width="5"/>
+  <rect x="156" y="70" width="17" height="34" rx="7" fill="#E3A92B" stroke="#16213E" stroke-width="5"/>
+  <!-- cabeza -->
+  <rect x="40" y="40" width="120" height="96" rx="32" fill="#F6C445" stroke="#16213E" stroke-width="5"/>
+  <path d="M52 64 q4 -14 22 -16" fill="none" stroke="#FFF1BF" stroke-width="5" stroke-linecap="round"/>
+  <!-- pantalla -->
+  <rect x="56" y="58" width="88" height="60" rx="22" fill="#16213E"/>
+  <rect x="77" y="75.0" width="12" height="18" rx="6" fill="#FFF1BF"/><rect x="111" y="75.0" width="12" height="18" rx="6" fill="#FFF1BF"/><path d="M89 102 q11 8 22 0" fill="none" stroke="#FFF1BF" stroke-width="4.5" stroke-linecap="round"/>
+  </g>
+</svg>

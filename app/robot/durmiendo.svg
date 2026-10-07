@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Asistente de RESPIRO durmiendo"><title>Asistente de RESPIRO durmiendo</title>
+  <!-- antena -->
+  <line x1="100" y1="40" x2="100" y2="22" stroke="#16213E" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="100" cy="17" r="8" fill="#9AA3B5" stroke="#16213E" stroke-width="4"/>
+  <!-- orejas -->
+  <rect x="27" y="70" width="17" height="34" rx="7" fill="#E3A92B" stroke="#16213E" stroke-width="5"/>
+  <rect x="156" y="70" width="17" height="34" rx="7" fill="#E3A92B" stroke="#16213E" stroke-width="5"/>
+  <!-- cuerpo -->
+  <path d="M70 140 h60 a16 16 0 0 1 16 16 v20 a16 16 0 0 1 -16 16 h-60 a16 16 0 0 1 -16 -16 v-20 a16 16 0 0 1 16 -16z"
+        fill="#F6C445" stroke="#16213E" stroke-width="5"/>
+  <!-- onda de respiración en el pecho -->
+  <path d="M72 168 q7 -9 14 0 t14 0 t14 0 t14 0" fill="none" stroke="#16213E" stroke-width="4.5" stroke-linecap="round"/>
+  <!-- brazos -->
+  <path d="M55 158 q-14 2 -17 14" fill="none" stroke="#16213E" stroke-width="6" stroke-linecap="round"/>
+  <path d="M145 158 q14 2 17 14" fill="none" stroke="#16213E" stroke-width="6" stroke-linecap="round"/>
+  <!-- cabeza -->
+  <rect x="40" y="40" width="120" height="96" rx="32" fill="#F6C445" stroke="#16213E" stroke-width="5"/>
+  <path d="M52 64 q4 -14 22 -16" fill="none" stroke="#FFF1BF" stroke-width="5" stroke-linecap="round"/>
+  <!-- pantalla -->
+  <rect x="56" y="58" width="88" height="60" rx="22" fill="#16213E"/>
+  <path d="M76 84 q7 7 14 0" fill="none" stroke="#FFF1BF" stroke-width="5" stroke-linecap="round"/><path d="M110 84 q7 7 14 0" fill="none" stroke="#FFF1BF" stroke-width="5" stroke-linecap="round"/><ellipse cx="100" cy="103" rx="5" ry="4" fill="#FFF1BF"/>
+  <text x="160" y="40" font-family="Georgia, serif" font-size="20" font-weight="700" fill="#16213E">z</text><text x="173" y="24" font-family="Georgia, serif" font-size="28" font-weight="700" fill="#16213E">Z</text>
+</svg>

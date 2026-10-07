@@ -6,6 +6,17 @@
     "directory": "./",
     "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/assets/*.mp4"]
-  }
+    "run_worker_first": ["/assets/*.mp4", "/api/*", "/app", "/app/*"]
+  },
+  // Variables públicas. Los secretos (TELEGRAM_BOT_TOKEN, SUPABASE_SERVICE_ROLE_KEY,
+  // MINIAPP_SECRETO) se guardan con `wrangler secret put` y nunca en el repo.
+  "vars": {
+    "SUPABASE_URL": "https://ookbxfjqvbbqmjaoimkp.supabase.co",
+    "N8N_MINIAPP_URL": "https://n8n.respiroai.es/webhook/respiro-miniapp",
+    "BOT_USUARIO": "RespiroAsistenteBot"
+  },
+  // Límite de peticiones a la API de la Mini App: 60 por minuto y usuario.
+  "ratelimits": [
+    { "name": "LIMITADOR", "namespace_id": "1701", "simple": { "limit": 60, "period": 60 } }
+  ]
 }

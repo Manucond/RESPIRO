@@ -1,0 +1,12 @@
+# Secretos locales (nunca al repo)
+.dev.vars*
+.env*
+# Ficheros de clientes / n8n con datos reales
+n8n/privado/
+# Herramientas
+.wrangler/
+node_modules/
+# Temporales de pruebas
+tests/n8n/.tmp/
+tests/ia/.codigo.json
+__pycache__/
