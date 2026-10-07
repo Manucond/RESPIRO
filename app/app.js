@@ -48,6 +48,7 @@
     sesion: ['La sesión ha caducado', 'Cierra la app y vuelve a abrirla desde el bot.'],
     sin_acceso: ['No tienes acceso', 'Pide tu enlace de invitación a RESPIRO.'],
     demasiadas: ['Vas muy rápido', 'Espera unos segundos y vuelve a intentarlo.'],
+    sin_calendario: ['Tu calendario aún no está conectado', 'Avisa a RESPIRO y lo dejamos listo.'],
   }[e.codigo] || ['Algo no ha ido bien', 'Inténtalo de nuevo en un momento.']);
   const pintarError = (e, destino = vista) => {
     const [t, s] = textoError(e);
@@ -98,6 +99,10 @@
   }
 
   function pintarAgenda(a, destino) {
+    if (a.error === 'sin_calendario') {
+      destino.innerHTML = robot('confundido', 'Tu calendario aún no está conectado', 'Avisa a RESPIRO y lo dejamos listo.');
+      return;
+    }
     const filas = [
       ...(a.citas || []).map((c) => ({ t: c.hora, html: `<li class="cita">
           <span class="cita__hora">${esc(c.hora)}</span>
@@ -200,6 +205,7 @@
       sel.disabled = true;
       try {
         const r = await api(`/api/huecos?fecha=${fecha}&tipo=${encodeURIComponent(tipoSel())}`);
+        if (r.error === 'sin_calendario') throw new ErrorApi('sin_calendario', 200);
         const h = r.horas || [];
         sel.innerHTML = h.length ? h.map((x) => `<option value="${esc(x)}">${esc(x)}</option>`).join('') : '<option value="">No hay huecos este día</option>';
         if (typeof preferida === 'string' && h.includes(preferida)) sel.value = preferida;
