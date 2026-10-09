@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Respiro — Cuéntanos tu negocio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     CONFIGURACIÓN: pon aquí el email donde quieres recibir
+     las respuestas (ver más abajo, en el <script>).
+     ============================================================ */
+  :root{
+    --verde:#1F4D45; --verde-2:#2E7A69; --menta:#EAF3F0; --crema:#F3EFE8;
+    --arena:#FAF7F2; --naranja:#E39A3B; --texto:#22312D; --gris:#5C6662; --borde:#E2DBCF;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--crema);font-family:Inter,Helvetica,Arial,sans-serif;color:var(--texto);line-height:1.55}
+  header{background:var(--verde);color:#fff;padding:28px 16px 64px}
+  .wrap{max-width:640px;margin:0 auto}
+  .logo{font-family:Fraunces,Georgia,serif;font-size:26px}
+  .logo i{color:#F2B66D}
+  header h1{font-family:Fraunces,Georgia,serif;font-weight:400;font-size:clamp(28px,6vw,38px);line-height:1.15;margin:28px 0 12px}
+  header p{color:#DCEBE6;margin:0;font-size:17px}
+  main{padding:0 16px 48px}
+  .card{background:#fff;border-radius:16px;padding:28px 24px;margin-top:-40px;box-shadow:0 10px 30px rgba(31,77,69,.08)}
+  fieldset{border:0;padding:0;margin:0 0 26px}
+  legend,.lbl{display:block;font-weight:600;font-size:15px;margin-bottom:8px}
+  .hint{font-weight:400;color:var(--gris);font-size:13px}
+  input[type=text],input[type=email],input[type=tel],select,textarea{
+    width:100%;padding:12px 14px;border:1px solid var(--borde);border-radius:10px;font:inherit;font-size:16px;background:var(--arena);color:var(--texto)}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--verde-2);outline-offset:1px;background:#fff}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .field{margin-bottom:16px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chips label{display:flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid var(--borde);border-radius:30px;background:var(--arena);cursor:pointer;font-size:14px}
+  .chips input{accent-color:var(--verde-2)}
+  .chips label:has(input:checked){background:var(--menta);border-color:var(--verde-2);color:var(--verde)}
+  .consent{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--gris)}
+  .consent input{margin-top:3px;accent-color:var(--verde-2)}
+  .consent a{color:var(--verde-2)}
+  button{width:100%;margin-top:18px;padding:16px;border:0;border-radius:30px;background:var(--naranja);color:#fff;font:600 17px Inter,Arial,sans-serif;cursor:pointer}
+  button:hover{filter:brightness(.95)}
+  button:disabled{opacity:.6;cursor:wait}
+  .msg{display:none;text-align:center;padding:20px 8px}
+  .msg h2{font-family:Fraunces,Georgia,serif;font-weight:400;color:var(--verde);font-size:28px;margin:0 0 10px}
+  .err{display:none;color:#A33A2B;font-size:14px;margin-top:12px;text-align:center}
+  [hidden]{display:none!important}
+  #intro .card + .card{margin-top:16px}
+  .kicker{margin:0 0 6px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--verde-2);font-weight:600}
+  .sec{font-family:Fraunces,Georgia,serif;font-weight:400;font-size:clamp(22px,4.5vw,26px);line-height:1.25;color:var(--verde);margin:0 0 16px}
+  .lead{margin:0 0 18px;color:var(--gris);font-size:16px}
+  .probs{list-style:none;margin:0;padding:0}
+  .probs li{display:flex;gap:14px;padding:14px 0;border-top:1px solid #EEE9E0;font-size:15px;color:var(--gris)}
+  .probs li:first-child{border-top:0;padding-top:4px}
+  .probs b,.sol b{display:block;color:var(--texto);font-size:16px;margin-bottom:2px}
+  .ico{flex:0 0 40px;height:40px;border-radius:12px;background:var(--arena);display:grid;place-items:center;font-size:20px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .sol{background:var(--menta);border-radius:12px;padding:16px;font-size:14.5px;color:var(--gris)}
+  .sol:last-child{grid-column:1/-1;background:var(--arena)}
+  .steps{margin:0;padding-left:22px;font-size:15.5px}
+  .steps li{padding:6px 0 6px 4px}
+  .steps li::marker{color:var(--naranja);font-weight:600}
+  .cta{text-align:center;background:var(--verde);color:#DCEBE6}
+  .cta .sec{color:#fff}
+  .cta p{margin:0}
+  .back{width:auto;margin:0 0 18px;padding:0;background:none;color:var(--verde-2);font:500 14px Inter,Arial,sans-serif}
+  .back:hover{filter:none;text-decoration:underline}
+  @media (max-width:520px){.grid{grid-template-columns:1fr}}
+  footer{text-align:center;font-size:12px;color:var(--gris);padding:0 16px 32px}
+  footer a{color:var(--verde-2)}
+  @media (max-width:520px){.row{grid-template-columns:1fr}.card{padding:22px 18px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="logo">Resp<i>i</i>ro</div>
+    <h1 id="h1">Tu negocio, sin tareas repetitivas</h1>
+    <p id="sub">Nos encargamos de reservas, mensajes y stock para que tú recuperes tu tiempo.</p>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <!-- ===== PANTALLA 1: qué resolvemos y qué hacemos ===== -->
+    <section id="intro">
+      <div class="card">
+        <p class="kicker">¿Te suena?</p>
+        <h2 class="sec">Lo que le pasa a casi todo pequeño negocio</h2>
+        <ul class="probs">
+          <li><span class="ico">📞</span><div><b>Llamadas que no puedes coger</b>Estás atendiendo y el teléfono suena. Cada llamada perdida puede ser una reserva o un cliente que se va a otro sitio.</div></li>
+          <li><span class="ico">💬</span><div><b>WhatsApp que no para, ni fuera de horario</b>Cierras y sigues contestando: "¿tenéis hueco?", "¿a qué hora abrís?", "¿me cambias la cita?".</div></li>
+          <li><span class="ico">🗓️</span><div><b>Clientes que reservan y no aparecen</b>Una mesa vacía o un hueco en la agenda es dinero perdido que nadie te devuelve.</div></li>
+          <li><span class="ico">📦</span><div><b>El stock, siempre a ojo</b>Te das cuenta de que falta algo cuando ya no queda, o pides de más "por si acaso".</div></li>
+          <li><span class="ico">⏳</span><div><b>Horas que no se ven, pero se notan</b>Confirmar, recordar, contestar, apuntar… Sumado, son varias horas a la semana que podrías dedicar a tu negocio o a ti.</div></li>
+        </ul>
+      </div>
+
+      <div class="card plain">
+        <p class="kicker">Qué hacemos</p>
+        <h2 class="sec">Montamos automatizaciones que hacen ese trabajo por ti</h2>
+        <p class="lead">No vendemos un programa para que aprendas a usarlo. Vemos qué tareas te quitan tiempo y las dejamos funcionando solas, conectadas a lo que ya usas.</p>
+        <div class="grid">
+          <div class="sol"><b>Reservas y citas que se hacen solas</b>El cliente escribe, se comprueba la disponibilidad, se crea la reserva y se le confirma. Sin que toques el móvil.</div>
+          <div class="sol"><b>Recordatorios automáticos</b>Tus clientes reciben un aviso antes de su cita o reserva, y pueden confirmar o cambiarla.</div>
+          <div class="sol"><b>Respuestas a mensajes frecuentes</b>Horarios, disponibilidad, precios de tu carta o servicios… se contestan al momento, también fuera de horario.</div>
+          <div class="sol"><b>Avisos de stock</b>Te avisamos cuando algo se está acabando, antes de que sea un problema.</div>
+          <div class="sol"><b>Y lo que tu negocio necesite</b>Cada negocio es distinto: tú eliges qué dejar de hacer a mano y lo montamos a tu medida.</div>
+        </div>
+      </div>
+
+      <div class="card plain">
+        <p class="kicker">Cómo trabajamos</p>
+        <h2 class="sec">Sencillo y sin compromiso</h2>
+        <ol class="steps">
+          <li><b>Nos cuentas tu negocio</b> y qué tareas te quitan más tiempo.</li>
+          <li><b>Te proponemos qué automatizar</b> para tu caso concreto.</li>
+          <li><b>Lo montamos contigo</b> y nos encargamos de que siga funcionando. Tú no cambias tu forma de trabajar.</li>
+        </ol>
+      </div>
+
+      <div class="card cta">
+        <h2 class="sec">¿Te gustaría recuperar ese tiempo?</h2>
+        <p>Cuéntanos un poco de tu negocio en 1 minuto y te contactamos para hablarlo con calma.</p>
+        <button type="button" id="irForm">Me interesa</button>
+      </div>
+    </section>
+
+    <!-- ===== PANTALLA 2: formulario ===== -->
+    <div class="card" id="formCard" hidden>
+      <button type="button" class="back" id="volver">← Volver</button>
+      <form id="f" novalidate>
+        <fieldset>
+          <legend>Tus datos</legend>
+          <div class="row">
+            <div class="field"><label class="lbl" for="nombre">Nombre</label><input id="nombre" name="Nombre" type="text" required autocomplete="name"></div>
+            <div class="field"><label class="lbl" for="negocio">Nombre del negocio</label><input id="negocio" name="Negocio" type="text" required autocomplete="organization"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label class="lbl" for="email">Email</label><input id="email" name="email" type="email" required autocomplete="email"></div>
+            <div class="field"><label class="lbl" for="tel">Teléfono <span class="hint">(opcional)</span></label><input id="tel" name="Teléfono" type="tel" autocomplete="tel"></div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label class="lbl" for="tipo">Tipo de negocio</label>
+              <select id="tipo" name="Tipo de negocio" required>
+                <option value="">Elige una opción</option>
+                <option>Restaurante, bar o cafetería</option>
+                <option>Peluquería, barbería o estética</option>
+                <option>Clínica, fisioterapia o salud</option>
+                <option>Tienda o comercio</option>
+                <option>Gimnasio o centro deportivo</option>
+                <option>Alojamiento turístico</option>
+                <option>Academia o formación</option>
+                <option>Otro</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="lbl" for="tam">Personas en el equipo</label>
+              <select id="tam" name="Tamaño del equipo">
+                <option value="">Elige una opción</option>
+                <option>Solo yo</option><option>2–5</option><option>6–15</option><option>Más de 15</option>
+              </select>
+            </div>
+          </div>
+          <div class="field"><label class="lbl" for="ciudad">Ciudad <span class="hint">(opcional)</span></label><input id="ciudad" name="Ciudad" type="text" autocomplete="address-level2"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>¿Qué tareas te quitan más tiempo? <span class="hint">Marca todas las que quieras</span></legend>
+          <div class="chips" data-group="Tareas que más tiempo quitan">
+            <label><input type="checkbox" value="Reservas y citas">Reservas y citas</label>
+            <label><input type="checkbox" value="Responder WhatsApp / mensajes">Responder WhatsApp y mensajes</label>
+            <label><input type="checkbox" value="Control de stock">Control de stock</label>
+            <label><input type="checkbox" value="Recordatorios a clientes">Recordatorios a clientes</label>
+            <label><input type="checkbox" value="Facturas y presupuestos">Facturas y presupuestos</label>
+            <label><input type="checkbox" value="Pedidos a proveedores">Pedidos a proveedores</label>
+            <label><input type="checkbox" value="Reseñas y redes sociales">Reseñas y redes sociales</label>
+            <label><input type="checkbox" value="Turnos del equipo">Turnos del equipo</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>¿Cuántas horas a la semana dedicas a esas tareas?</legend>
+          <div class="chips" data-radio="Horas semanales en tareas repetitivas">
+            <label><input type="radio" name="horas" value="Menos de 3">Menos de 3</label>
+            <label><input type="radio" name="horas" value="3–7">3–7</label>
+            <label><input type="radio" name="horas" value="8–15">8–15</label>
+            <label><input type="radio" name="horas" value="Más de 15">Más de 15</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>¿Usas ya alguna herramienta para esto?</legend>
+          <div class="chips" data-radio="Herramientas actuales">
+            <label><input type="radio" name="herr" value="Todo a mano / papel">Todo a mano o en papel</label>
+            <label><input type="radio" name="herr" value="Alguna app, pero no me convence">Alguna app, pero no me convence</label>
+            <label><input type="radio" name="herr" value="Sí, y estoy contento">Sí, y estoy contento</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>¿Cómo prefieres que te contactemos?</legend>
+          <div class="chips" data-radio="Contacto preferido">
+            <label><input type="radio" name="cont" value="Llamada">Llamada</label>
+            <label><input type="radio" name="cont" value="WhatsApp">WhatsApp</label>
+            <label><input type="radio" name="cont" value="Email">Email</label>
+            <label><input type="radio" name="cont" value="En persona">En persona</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <label class="lbl" for="com">¿Algo más que quieras contarnos? <span class="hint">(opcional)</span></label>
+          <textarea id="com" name="Comentarios" rows="3"></textarea>
+        </fieldset>
+
+        <label class="consent">
+          <input type="checkbox" id="ok" required>
+          <span>Acepto que Respiro use estos datos para contactarme sobre su servicio, según su <a href="https://www.respiroai.es/privacidad.html" target="_blank">política de privacidad</a>.</span>
+        </label>
+
+        <button type="submit" id="btn">Enviar</button>
+        <p class="err" id="err"></p>
+      </form>
+
+      <div class="msg" id="gracias">
+        <h2>¡Gracias!</h2>
+        <p>Hemos recibido tus datos. Te contactaremos pronto para hablarlo con calma.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>© 2026 Respiro · <a href="https://www.respiroai.es">respiroai.es</a></footer>
+
+<script>
+  // ⬇️ CAMBIA ESTO por el email donde quieres recibir las respuestas
+  const EMAIL_DESTINO = "TU_EMAIL_AQUI@ejemplo.com";
+
+  const intro = document.getElementById('intro');
+  const formCard = document.getElementById('formCard');
+  const h1 = document.getElementById('h1'), sub = document.getElementById('sub');
+  const txt = {
+    intro: ['Tu negocio, sin tareas repetitivas', 'Nos encargamos de reservas, mensajes y stock para que tú recuperes tu tiempo.'],
+    form:  ['Cuéntanos tu negocio', 'Un minuto y te contactamos para hablarlo con calma. Sin compromiso.']
+  };
+  function mostrar(p){
+    intro.hidden = p !== 'intro';
+    formCard.hidden = p !== 'form';
+    [h1.textContent, sub.textContent] = txt[p];
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  document.getElementById('irForm').addEventListener('click', () => mostrar('form'));
+  document.getElementById('volver').addEventListener('click', () => mostrar('intro'));
+
+  const f = document.getElementById('f');
+  const err = document.getElementById('err');
+  const btn = document.getElementById('btn');
+
+  f.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.style.display = 'none';
+    const req = ['nombre','negocio','email','tipo'];
+    for (const id of req) {
+      const el = document.getElementById(id);
+      if (!el.value.trim()) { showErr('Rellena tu nombre, el del negocio, tu email y el tipo de negocio.'); el.focus(); return; }
+    }
+    if (!document.getElementById('email').checkValidity()) { showErr('Revisa que el email esté bien escrito.'); return; }
+    if (!document.getElementById('ok').checked) { showErr('Necesitamos tu permiso para poder contactarte.'); return; }
+
+    const data = {};
+    f.querySelectorAll('input[type=text],input[type=email],input[type=tel],select,textarea').forEach(el => {
+      if (el.name && el.value.trim()) data[el.name] = el.value.trim();
+    });
+    f.querySelectorAll('[data-group]').forEach(g => {
+      const v = [...g.querySelectorAll('input:checked')].map(i => i.value);
+      if (v.length) data[g.dataset.group] = v.join(', ');
+    });
+    f.querySelectorAll('[data-radio]').forEach(g => {
+      const c = g.querySelector('input:checked');
+      if (c) data[g.dataset.radio] = c.value;
+    });
+    data._subject = 'Nuevo interesado en Respiro: ' + (data['Negocio'] || '');
+    data._template = 'table';
+    data._captcha = 'false';
+
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    try {
+      const r = await fetch('https://formsubmit.co/ajax/' + EMAIL_DESTINO, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify(data)
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j.success === 'false' || j.success === false) throw new Error();
+      f.style.display = 'none';
+      document.getElementById('volver').hidden = true;
+      document.getElementById('gracias').style.display = 'block';
+      window.scrollTo({top:0,behavior:'smooth'});
+    } catch (_) {
+      showErr('No se ha podido enviar. Inténtalo de nuevo o responde directamente al email que te enviamos.');
+      btn.disabled = false; btn.textContent = 'Enviar';
+    }
+  });
+  function showErr(t){ err.textContent = t; err.style.display = 'block'; }
+</script>
+</body>
+</html>
